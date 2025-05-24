@@ -7,6 +7,7 @@
 ## 📖 目录
 
 - [🌟 功能特性](#-功能特性)
+- [☁️ Smithery云部署](#️-smithery云部署)
 - [🛠️ 安装教程](#️-安装教程)
 - [⚙️ 配置方法](#️-配置方法)
 - [🎮 使用指南](#-使用指南)
@@ -31,6 +32,78 @@
 - ✅ 让AI助手帮你分析数据
 - ✅ 生成数据报告和见解
 - ✅ 数据库内容搜索和过滤
+
+## ☁️ Smithery云部署
+
+### 🚀 快速部署到Smithery
+
+[Smithery](https://smithery.ai) 是专门为MCP服务器设计的云平台，可以一键部署您的MySQL MCP Server。
+
+#### 📋 部署前准备
+
+确保您的项目包含以下文件：
+- ✅ `Dockerfile` - Docker容器构建配置
+- ✅ `smithery.yaml` - Smithery平台配置
+- ✅ 完整的项目源码
+
+#### 🔧 部署步骤
+
+1. **Fork项目到您的GitHub**
+   ```bash
+   # 访问项目页面并点击Fork按钮
+   https://github.com/guangxiangdebizi/MySQL_MCP
+   ```
+
+2. **登录Smithery平台**
+   - 访问 [Smithery.ai](https://smithery.ai)
+   - 使用GitHub账号登录
+
+3. **连接GitHub仓库**
+   - 点击 "Deploy Server"
+   - 选择您Fork的 `MySQL_MCP` 仓库
+   - 确认部署配置
+
+4. **等待构建完成**
+   - Smithery会自动构建Docker镜像
+   - 构建过程大约需要2-3分钟
+
+#### 🎯 使用部署的服务器
+
+部署成功后，您可以在任何支持MCP的AI客户端中使用：
+
+```json
+{
+  "mcpServers": {
+    "mysql-database": {
+      "url": "https://server.smithery.ai/your-server-id/sse",
+      "type": "sse"
+    }
+  }
+}
+```
+
+#### 💡 云部署优势
+
+- 🌐 **全球访问**: 无需本地安装，任何地方都能使用
+- 🔄 **自动更新**: 推送代码后自动重新部署
+- 📈 **高可用性**: 专业的云基础设施保障
+- 🔒 **安全隔离**: 每个部署独立运行，数据安全
+- 📊 **使用统计**: 详细的调用统计和监控
+
+#### ⚙️ 配置说明
+
+部署后，您需要在AI客户端中提供数据库连接信息：
+
+```
+请帮我连接到MySQL数据库：
+- 主机: your-mysql-host.com
+- 端口: 3306
+- 用户名: your-username
+- 密码: your-password
+- 数据库: your-database
+```
+
+> **🔐 安全提示**: 建议为MCP服务器创建专门的只读数据库用户，限制权限范围。
 
 ## 🛠️ 安装教程
 

@@ -1,0 +1,49 @@
+# Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 开发工具
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试文件
+test/
+tests/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# 文档
+docs/
+*.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 环境文件
+.env*
+
+# 日志文件
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# Windows批处理文件
+*.bat
+
+# 备份文件
+*.bak 
