@@ -1,4 +1,5 @@
 # MySQL MCP Server 🚀
+[![smithery badge](https://smithery.ai/badge/@guangxiangdebizi/mysql_mcp)](https://smithery.ai/server/@guangxiangdebizi/mysql_mcp)
 
 一个功能强大的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地连接和查询MySQL数据库。
 
@@ -33,6 +34,14 @@
 - ✅ 数据库内容搜索和过滤
 
 ## 🛠️ 安装教程
+
+### Installing via Smithery
+
+To install mysql_mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@guangxiangdebizi/mysql_mcp):
+
+```bash
+npx -y @smithery/cli install @guangxiangdebizi/mysql_mcp --client claude
+```
 
 ### 📋 环境要求
 
