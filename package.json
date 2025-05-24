@@ -1,0 +1,32 @@
+{
+  "name": "my-awesome-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mysql-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node --esm src/index.ts",
+    "start": "node dist/index.js",
+    "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3100",
+    "install-global": "npm run build && npm install -g .",
+    "quick-setup": "npm install && npm run build && echo \"✅ 安装完成！请查看 README.md 了解配置方法\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mcp", "mysql", "database"],
+  "author": "",
+  "license": "ISC",
+  "description": "MySQL MCP Server for database interactions",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "mysql2": "^3.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "supergateway": "^2.8.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
