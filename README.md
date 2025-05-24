@@ -49,8 +49,8 @@
 
 ```bash
 # 下载项目
-git clone <项目地址>
-cd my-awesome-mcp
+git clone https://github.com/guangxiangdebizi/MySQL_MCP
+cd MySQL_MCP
 
 # 运行一键安装脚本
 ./test-install.bat   # Windows用户
