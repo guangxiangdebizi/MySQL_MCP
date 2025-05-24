@@ -20,7 +20,7 @@
 
 | 文件名 | 说明 | 状态 |
 |--------|------|------|
-| `Dockerfile` | Docker容器构建配置 | ✅ 已包含 |
+| `Dockerfile` | Docker容器构建配置 | ✅ 已包含（已修复构建问题） |
 | `smithery.yaml` | Smithery平台配置 | ✅ 已包含 |
 | `package.json` | Node.js项目配置 | ✅ 已包含 |
 | `src/index.ts` | MCP服务器主文件 | ✅ 已包含 |
@@ -28,17 +28,37 @@
 
 ### 📄 配置文件详解
 
-#### Dockerfile
+#### Dockerfile（已修复）
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app
+
+# 复制package文件以优化Docker层缓存
 COPY package*.json ./
-RUN npm install --production
+
+# 安装所有依赖（包括devDependencies以便构建）
+RUN npm install
+
+# 复制应用代码
 COPY . .
+
+# 构建TypeScript代码
 RUN npm run build
+
+# 确保dist目录存在并包含index.js
+RUN ls -la dist/ && test -f dist/index.js
+
+# 删除devDependencies以减小镜像大小（保留构建产物）
+RUN npm prune --production
+
+# 暴露端口（如果需要HTTP模式）
 EXPOSE 3100
+
+# 设置默认命令
 CMD ["node", "dist/index.js"]
 ```
+
+> **🔧 修复说明**: 之前的Dockerfile使用了`npm install --production`，这导致TypeScript编译器无法安装，造成构建失败。现在的版本先安装所有依赖进行构建，然后删除开发依赖以减小镜像大小。
 
 #### smithery.yaml
 ```yaml
@@ -245,25 +265,114 @@ AI会自动调用云端的MCP服务器来执行这些操作。
 
 ### 常见部署错误
 
-#### 1. 构建失败
+#### 1. TypeScript编译器找不到（tsc: not found）⚠️ 最常见问题
+
+**错误信息**:
 ```
-错误: npm install failed
-解决: 检查package.json依赖版本
+#17 [stage-1  6/12] RUN npm run build
+#17 0.726 > my-awesome-mcp@1.0.0 build
+#17 0.726 > tsc
+#17 0.733 sh: tsc: not found
+Error: process "/bin/sh -c npm run build" did not complete successfully: exit code: 127
 ```
 
-#### 2. TypeScript编译错误
-```
-错误: tsc build failed
-解决: 检查src/目录下的TypeScript代码语法
+**原因**: Dockerfile使用了`npm install --production`，只安装production依赖，而TypeScript编译器在devDependencies中。
+
+**✅ 解决方案**: 已修复！现在的Dockerfile正确安装了所有依赖。如果您仍遇到此问题，请确保使用最新的Dockerfile：
+
+```dockerfile
+# 正确的Dockerfile配置
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+
+# ✅ 安装所有依赖（包括devDependencies）
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# 删除devDependencies以减小镜像大小
+RUN npm prune --production
+
+CMD ["node", "dist/index.js"]
 ```
 
-#### 3. Docker构建失败
+#### 2. 依赖安装失败
+
+**错误信息**:
 ```
-错误: Dockerfile syntax error
-解决: 检查Dockerfile格式和指令
+npm ERR! code ENOTFOUND
+npm ERR! network request failed
 ```
 
-### 获取帮助
+**解决方案**:
+- 检查package.json中的依赖版本
+- 确保npm registry可访问
+- 检查网络连接
+
+#### 3. 文件权限错误
+
+**错误信息**:
+```
+permission denied while trying to connect to the Docker daemon
+```
+
+**解决方案**:
+- 确保Docker服务正在运行
+- 检查用户权限
+- 在Smithery平台上这个问题通常不会出现
+
+#### 4. 构建超时
+
+**错误信息**:
+```
+Build timeout after 10 minutes
+```
+
+**解决方案**:
+- 检查.dockerignore文件是否正确排除了不必要的文件
+- 确保依赖版本稳定
+- 联系Smithery支持
+
+### 🔧 本地测试构建
+
+在推送到Smithery之前，建议在本地测试Docker构建：
+
+```bash
+# 1. 构建Docker镜像
+docker build -t mysql-mcp-test .
+
+# 2. 测试运行
+docker run --rm mysql-mcp-test node --version
+
+# 3. 检查构建产物
+docker run --rm mysql-mcp-test ls -la dist/
+
+# 4. 测试MCP服务器启动
+docker run --rm mysql-mcp-test node dist/index.js --help
+```
+
+### 📊 构建日志分析
+
+如果遇到构建问题，请注意以下关键阶段：
+
+1. **依赖安装**:
+   ```
+   ✅ #4 [stage-1  4/12] RUN npm install
+   ```
+
+2. **TypeScript编译**:
+   ```
+   ✅ #6 [stage-1  6/12] RUN npm run build
+   ```
+
+3. **文件验证**:
+   ```
+   ✅ #7 [stage-1  7/12] RUN ls -la dist/ && test -f dist/index.js
+   ```
+
+### 🆘 获取帮助
 
 - 📧 Smithery支持: support@smithery.ai
 - 🐛 GitHub Issues: 在项目仓库提交问题

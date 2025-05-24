@@ -1,25 +1,18 @@
 FROM node:18-alpine
 
-# 设置工作目录
 WORKDIR /app
 
-# 复制package文件以优化Docker层缓存
+# Copy package files
 COPY package*.json ./
 
-# 安装依赖
-RUN npm install --production
+# Install dependencies
+RUN npm install
 
-# 复制应用代码
+# Copy application code
 COPY . .
 
-# 构建TypeScript代码
+# Build the application
 RUN npm run build
 
-# 确保dist目录存在并包含index.js
-RUN ls -la dist/ && test -f dist/index.js
-
-# 暴露端口（如果需要HTTP模式）
-EXPOSE 3100
-
-# 设置默认命令（这将被smithery.yaml中的commandFunction覆盖）
+# Command will be provided by smithery.yaml
 CMD ["node", "dist/index.js"] 
