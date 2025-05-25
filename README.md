@@ -122,7 +122,7 @@
 
 ```bash
 # 下载项目
-git clone https://github.com/guangxiangdebizi/MySQL_MCP
+git clone https://github.com/guangxiangdebizi/MySQL_MCP.git
 cd MySQL_MCP
 
 # 运行一键安装脚本
