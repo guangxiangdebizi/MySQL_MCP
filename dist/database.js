@@ -154,13 +154,8 @@ export class DatabaseManager {
      * 检查是否为危险的查询操作
      */
     isDangerousQuery(query) {
-        const dangerousKeywords = [
-            'DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER',
-            'TRUNCATE', 'CREATE', 'REPLACE', 'LOAD', 'IMPORT'
-        ];
-        const upperQuery = query.toUpperCase().trim();
-        return dangerousKeywords.some(keyword => upperQuery.startsWith(keyword + ' ') ||
-            upperQuery.includes(' ' + keyword + ' '));
+        const dangerousPattern = /\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE|LOAD|IMPORT)\b/i;
+        return dangerousPattern.test(query.trim());
     }
     /**
      * 验证表名是否合法
