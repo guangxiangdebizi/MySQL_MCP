@@ -1,37 +1,132 @@
-# MySQL MCP Server 🚀
+# MySQL MCP Server 2.0 🚀
 
-一个功能强大的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地连接和查询MySQL数据库。
+一个功能强大且易用的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地进行完整的数据库操作，包括增删改查、事务管理和智能回滚功能。
 
-> **🎯 目标用户**: 希望在VSCode的Cline中使用AI助手操作MySQL数据库的开发者
+> **🎯 目标用户**: 希望在VSCode的Cline中使用AI助手进行完整MySQL数据库操作的开发者
 
 ## 📖 目录
 
 - [🌟 功能特性](#-功能特性)
+- [🔧 工具概览](#-工具概览)
 - [☁️ Smithery云部署](#️-smithery云部署)
 - [🛠️ 安装教程](#️-安装教程)
 - [⚙️ 配置方法](#️-配置方法)
 - [🎮 使用指南](#-使用指南)
-- [🔧 高级配置](#-高级配置)
+- [🔄 事务管理](#-事务管理)
+- [📊 日志系统](#-日志系统)
 - [❗ 故障排除](#-故障排除)
 - [💡 使用技巧](#-使用技巧)
 - [🔒 安全说明](#-安全说明)
-- [📋 常见问题](#-常见问题)
 
 ## 🌟 功能特性
 
 ### ✨ 核心功能
 - 🔗 **智能数据库连接**: 支持动态连接MySQL数据库，参数灵活配置
-- 🔍 **安全查询执行**: 仅支持SELECT查询，自动过滤危险操作
-- 📊 **表结构查看**: 快速查看数据库表列表和详细结构
-- 🛡️ **内置安全防护**: SQL注入防护和危险操作过滤
+- 🔄 **完整CRUD操作**: 支持INSERT、UPDATE、DELETE、SELECT等所有SQL操作
+- 🛡️ **自动事务管理**: 修改操作自动开启事务，支持智能回滚
+- 📊 **增强表查看**: 显示表结构概览、行数统计和样本数据
+- 📝 **智能日志系统**: 详细记录所有操作，支持错误追踪和性能分析
+- 🔙 **历史回滚功能**: 查看操作历史，选择性回滚到任意步骤
 - 🚀 **双模式部署**: 支持stdio模式和HTTP/SSE模式
 
 ### 🎯 使用场景
-- ✅ 在AI对话中查询数据库数据
-- ✅ 快速了解数据库表结构
-- ✅ 让AI助手帮你分析数据
-- ✅ 生成数据报告和见解
-- ✅ 数据库内容搜索和过滤
+- ✅ 完整的数据库CRUD操作（增删改查）
+- ✅ 数据库结构分析和优化建议
+- ✅ 批量数据处理和迁移
+- ✅ 事务安全的数据修改
+- ✅ 数据备份前的安全测试
+- ✅ 复杂查询的构建和调试
+
+### 🆕 2.0版本新特性
+- 🎯 **工具简化**: 删除重复工具，保留万能的`execute_query`
+- 📈 **增强展示**: `show_tables`显示表概览，`describe_table`包含样本数据
+- 🔄 **完整回滚**: 自动生成精确的回滚查询，支持INSERT/UPDATE/DELETE回滚
+- 📊 **实时监控**: 详细的操作统计和性能监控
+- 🛡️ **安全升级**: 移除安全限制，支持完整数据库操作权限
+
+## 🔧 工具概览
+
+### 核心工具 (11个)
+
+| 工具名称 | 功能描述 | 使用场景 |
+|---------|----------|----------|
+| `connect_database` | 连接MySQL数据库 | 建立数据库连接 |
+| `execute_query` | **万能SQL执行工具** | 执行任何SQL操作（CRUD、DDL等） |
+| `show_tables` | 显示所有表及结构概览 | 快速了解数据库整体结构 |
+| `describe_table` | 显示表详细结构和样本数据 | 深入了解特定表的结构和内容 |
+| `begin_transaction` | 开始事务 | 手动控制事务开始 |
+| `commit_transaction` | 提交事务 | 确认所有修改 |
+| `rollback_transaction` | 回滚事务 | 撤销所有未提交修改 |
+| `show_transaction_history` | 显示事务历史 | 查看所有操作记录 |
+| `rollback_to_step` | 回滚到指定步骤 | 选择性撤销操作 |
+| `full_rollback` | 完全回滚 | 撤销所有事务内操作 |
+| `disconnect_database` | 断开数据库连接 | 安全关闭连接 |
+
+### 🎯 主要改进
+
+#### 1. 工具简化
+```
+旧版本: 15个工具 (insert_data, update_data, delete_data, select_data, create_table, drop_table, get_table_info...)
+新版本: 11个工具 (保留万能的execute_query，删除重复功能)
+```
+
+#### 2. 增强展示
+```
+show_tables 输出示例:
+📋 数据库概览
+📊 总共找到 3 个表:
+
+🗂️ **users**
+   📊 行数: 1250
+   🏗️ 列: id(int), name(varchar), email(varchar), created_at(datetime)
+
+🗂️ **orders**
+   📊 行数: 3420
+   🏗️ 列: id(int), user_id(int), amount(decimal), status(enum), order_date(datetime)
+```
+
+#### 3. 样本数据展示
+```
+describe_table 输出示例:
+🔍 表 "users" 的详细信息
+
+📊 基本信息:
+   总行数: 1250
+   总列数: 4
+
+🏗️ 表结构:
+字段名               | 类型            | 可为空   | 键      | 默认值     | 额外信息
+================================================================================
+id                   | int(11)         | NO       | PRI     | NULL       | auto_increment
+name                 | varchar(100)    | NO       |         | NULL       |
+email                | varchar(255)    | YES      | UNI     | NULL       |
+created_at           | datetime        | YES      |         | NULL       |
+
+📄 样本数据 (前5行):
+[
+  {
+    "id": 1,
+    "name": "张三",
+    "email": "zhangsan@example.com",
+    "created_at": "2024-01-15T10:30:00.000Z"
+  },
+  ...
+]
+```
+
+#### 4. 智能事务管理
+```
+自动功能:
+- INSERT/UPDATE/DELETE操作自动开启事务
+- 自动生成精确的回滚查询
+- 记录每个操作的详细信息
+- 支持选择性回滚到任意步骤
+
+回滚查询示例:
+INSERT → DELETE FROM table WHERE id = ?
+UPDATE → UPDATE table SET col1=?, col2=? WHERE condition
+DELETE → INSERT INTO table (col1, col2) VALUES (?, ?)
+```
 
 ## ☁️ Smithery云部署
 
@@ -39,18 +134,10 @@
 
 [Smithery](https://smithery.ai) 是专门为MCP服务器设计的云平台，可以一键部署您的MySQL MCP Server。
 
-#### 📋 部署前准备
-
-确保您的项目包含以下文件：
-- ✅ `Dockerfile` - Docker容器构建配置
-- ✅ `smithery.yaml` - Smithery平台配置
-- ✅ 完整的项目源码
-
 #### 🔧 部署步骤
 
 1. **Fork项目到您的GitHub**
    ```bash
-   # 访问项目页面并点击Fork按钮
    https://github.com/guangxiangdebizi/MySQL_MCP
    ```
 
@@ -63,602 +150,294 @@
    - 选择您Fork的 `MySQL_MCP` 仓库
    - 确认部署配置
 
-4. **等待构建完成**
-   - Smithery会自动构建Docker镜像
-   - 构建过程大约需要2-3分钟
-
-#### 🎯 使用部署的服务器
-
-部署成功后，您可以在任何支持MCP的AI客户端中使用：
-
-```json
-{
-  "mcpServers": {
-    "mysql-database": {
-      "url": "https://server.smithery.ai/your-server-id/sse",
-      "type": "sse"
-    }
-  }
-}
-```
-
-#### 💡 云部署优势
-
-- 🌐 **全球访问**: 无需本地安装，任何地方都能使用
-- 🔄 **自动更新**: 推送代码后自动重新部署
-- 📈 **高可用性**: 专业的云基础设施保障
-- 🔒 **安全隔离**: 每个部署独立运行，数据安全
-- 📊 **使用统计**: 详细的调用统计和监控
-
-#### ⚙️ 配置说明
-
-部署后，您需要在AI客户端中提供数据库连接信息：
-
-```
-请帮我连接到MySQL数据库：
-- 主机: your-mysql-host.com
-- 端口: 3306
-- 用户名: your-username
-- 密码: your-password
-- 数据库: your-database
-```
-
-> **🔐 安全提示**: 建议为MCP服务器创建专门的只读数据库用户，限制权限范围。
+4. **使用部署的服务器**
+   ```json
+   {
+     "mcpServers": {
+       "mysql-database": {
+         "url": "https://server.smithery.ai/your-server-id/sse",
+         "type": "sse"
+       }
+     }
+   }
+   ```
 
 ## 🛠️ 安装教程
 
 ### 📋 环境要求
-
-确保你的电脑满足以下要求：
 
 - ✅ **Node.js 18+** - [下载地址](https://nodejs.org/)
 - ✅ **MySQL 5.7+ 或 8.0+** - 确保数据库服务正在运行
 - ✅ **VSCode** - [下载地址](https://code.visualstudio.com/)
 - ✅ **Cline扩展** - 在VSCode扩展市场搜索"Cline"安装
 
-### 🔧 一键安装脚本
-
-我们提供了一键安装脚本，帮你自动完成所有安装步骤：
+### 🔧 快速安装
 
 ```bash
-# 下载项目
+# 1. 克隆项目
 git clone https://github.com/guangxiangdebizi/MySQL_MCP
 cd MySQL_MCP
 
-# 运行一键安装脚本
-./test-install.bat   # Windows用户
-# 或
-npm run quick-setup  # 跨平台
-```
-
-### 📝 手动安装步骤
-
-#### 步骤1: 解决PowerShell权限（Windows用户）
-
-如果遇到执行策略错误，请先运行：
-
-```powershell
-# 在PowerShell中运行（管理员权限）
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-#### 步骤2: 安装项目依赖
-
-```bash
-# 安装所有依赖包（包括supergateway）
+# 2. 安装依赖
 npm install
 
-# 如果安装失败，可以尝试清除缓存
-npm cache clean --force
-npm install
-```
-
-#### 步骤3: 构建项目
-
-```bash
-# 编译TypeScript代码
+# 3. 构建项目
 npm run build
 
-# 验证构建是否成功
-ls dist/  # 应该能看到index.js文件
+# 4. 测试安装
+npm test
 ```
 
 ## ⚙️ 配置方法
 
-### 🎯 配置方式选择
+### 📌 方法1: stdio模式配置（推荐）
 
-我们提供了两种配置方式，根据你的需求选择：
-
-| 配置方式 | 优点 | 缺点 | 推荐场景 |
-|---------|------|------|----------|
-| **stdio模式** | 简单、直接、无需端口 | 每次重启VSCode需要重新启动 | 个人开发、简单使用 |
-| **HTTP/SSE模式** | 服务持久运行、支持autoApprove | 需要管理端口、稍微复杂 | 频繁使用、团队协作 |
-
-### 📌 方法1: stdio模式配置（推荐新手）
-
-#### 步骤1: 打开Cline配置
-
-1. 打开VSCode
-2. 按 `Ctrl+Shift+P` (Windows) 或 `Cmd+Shift+P` (Mac)
-3. 输入 `Cline: Open MCP Settings`
-4. 回车打开配置文件
-
-#### 步骤2: 添加配置
-
-将以下配置复制到Cline设置中：
+在Cline设置中添加：
 
 ```json
 {
   "mcpServers": {
     "mysql-database": {
       "command": "node",
-      "args": ["C:/Users/你的用户名/Desktop/my-awesome-mcp/dist/index.js"],
+      "args": ["C:/path/to/my-awesome-mcp/dist/index.js"],
       "env": {}
     }
   }
 }
 ```
 
-> ⚠️ **重要**: 请将路径中的 `你的用户名` 替换为你的实际用户名！
-
-#### 步骤3: 重启VSCode
-
-保存配置后，重启VSCode，配置即生效。
-
-### 🌐 方法2: HTTP/SSE模式配置（推荐高级用户）
-
-#### 步骤1: 启动Gateway服务
-
-```bash
-# 启动HTTP/SSE服务
-npm run start-gateway
-
-# 服务启动后会显示：
-# ✅ MySQL MCP Server running on http://localhost:3100
-```
-
-#### 步骤2: 配置Cline
+### 📌 方法2: HTTP/SSE模式配置
 
 ```json
 {
   "mcpServers": {
     "mysql-database": {
-      "url": "http://localhost:3100/sse",
-      "type": "sse",
-      "disabled": false,
-      "autoApprove": [
-        "connect_database",
-        "execute_query",
-        "show_tables",
-        "describe_table",
-        "disconnect_database"
-      ]
-    }
-  }
-}
-```
-
-#### 步骤3: 重启VSCode
-
-配置完成后重启VSCode。
-
-### 🔄 验证配置是否成功
-
-配置成功后，在Cline对话中输入：
-
-```
-你好，请显示一下当前可用的数据库工具
-```
-
-如果配置成功，Cline会显示以下工具：
-
-- ✅ `connect_database` - 连接MySQL数据库
-- ✅ `execute_query` - 执行SQL查询
-- ✅ `show_tables` - 显示所有表
-- ✅ `describe_table` - 显示表结构
-- ✅ `disconnect_database` - 断开数据库连接
-
-## 🎮 使用指南
-
-### 🔌 第一步: 连接数据库
-
-在Cline对话中输入：
-
-```
-请帮我连接到MySQL数据库：
-- 主机: localhost
-- 端口: 3306
-- 用户名: root
-- 密码: 你的密码
-- 数据库: 你的数据库名
-```
-
-### 📊 第二步: 探索数据库
-
-```
-请显示这个数据库中的所有表
-```
-
-```
-请显示users表的结构信息
-```
-
-### 🔍 第三步: 查询数据
-
-```
-请查询users表中的前10条记录
-```
-
-```
-请查询年龄大于25岁的用户，按创建时间排序
-```
-
-```
-请统计每个部门的用户数量
-```
-
-### 📈 第四步: 数据分析
-
-```
-请分析sales表中过去30天的销售趋势
-```
-
-```
-请找出购买金额最高的前5名客户
-```
-
-## 🔧 高级配置
-
-### 🛠️ 自定义端口
-
-如果3100端口被占用，可以修改：
-
-```json
-// package.json
-{
-  "scripts": {
-    "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3200"
-  }
-}
-```
-
-```json
-// Cline配置
-{
-  "mcpServers": {
-    "mysql-database": {
-      "url": "http://localhost:3200/sse",
+      "url": "http://localhost:3101/sse",
       "type": "sse"
     }
   }
 }
 ```
 
-### 🔐 环境变量配置
-
-创建 `.env` 文件来管理敏感信息：
-
+启动服务器：
 ```bash
-# .env
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=your_database
+npm run start:gateway
 ```
 
-### 🚀 全局安装
+## 🎮 使用指南
 
-```bash
-# 全局安装
-npm run install-global
+### 🚀 基础连接
 
-# 然后可以在任何地方使用
-mysql-mcp-server
+```
+请帮我连接到MySQL数据库：
+- 主机: localhost
+- 端口: 3306  
+- 用户名: root
+- 密码: your_password
+- 数据库: test_db
 ```
 
-## ❗ 故障排除
+### 📊 查看数据库结构
 
-### 🔥 常见错误及解决方案
+```
+# 查看所有表概览
+请显示数据库中的所有表
 
-#### ❌ npm install失败
-
-**错误信息**: `execution policy error` 或 `cannot run scripts`
-
-**解决方案**:
-```powershell
-# 方案1: 修改PowerShell策略
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-# 方案2: 使用管理员权限运行PowerShell
-# 右键点击PowerShell -> "以管理员身份运行"
-
-# 方案3: 使用yarn代替npm
-npm install -g yarn
-yarn install
+# 查看特定表详情
+请描述users表的结构
 ```
 
-#### ❌ 找不到dist/index.js
+### 🔄 执行CRUD操作
 
-**错误信息**: `Cannot find module 'dist/index.js'`
+```sql
+-- 查询数据
+SELECT * FROM users WHERE age > 25 LIMIT 10
 
-**解决方案**:
-```bash
-# 确保构建成功
-npm run build
+-- 插入数据  
+INSERT INTO users (name, email, age) VALUES ('张三', 'zhang@example.com', 28)
 
-# 检查dist目录是否存在
-ls dist/
+-- 更新数据
+UPDATE users SET age = 29 WHERE email = 'zhang@example.com'
 
-# 如果没有dist目录，重新构建
-rm -rf dist/
-npm run build
+-- 删除数据
+DELETE FROM users WHERE id = 123
 ```
 
-#### ❌ Cline无法加载MCP服务器
+### 🛡️ 事务安全操作
 
-**错误信息**: Cline显示"MCP server failed to start"
+```
+# 查看事务历史
+请显示当前事务的操作历史
 
-**解决方案**:
-1. **检查路径**: 确保配置中的路径使用正斜杠 `/`
-2. **检查权限**: 确保文件有执行权限
-3. **查看日志**: 
-   ```bash
-   # 手动运行服务器查看错误
-   node dist/index.js
-   ```
-4. **重启VSCode**: 有时需要完全重启VSCode
+# 回滚到特定步骤
+请回滚到第3步操作之前
 
-#### ❌ 数据库连接失败
+# 完全回滚
+请完全回滚所有未提交的操作
 
-**错误信息**: `Access denied` 或 `Connection refused`
-
-**解决方案**:
-- ✅ 确保MySQL服务正在运行
-- ✅ 检查用户名和密码是否正确
-- ✅ 确认数据库名称存在
-- ✅ 检查MySQL用户权限
-- ✅ 测试连接：
-  ```bash
-  mysql -h localhost -u root -p
-  ```
-
-#### ❌ 端口被占用
-
-**错误信息**: `Port 3100 is already in use`
-
-**解决方案**:
-```bash
-# 查找占用端口的进程
-netstat -ano | findstr :3100
-
-# 终止进程（替换<PID>为实际进程ID）
-taskkill /PID <PID> /F
-
-# 或者使用不同端口
-npm run start-gateway -- --port 3200
+# 提交事务
+请提交当前事务
 ```
 
-### 🔍 调试模式
+## 🔄 事务管理
 
-启用详细日志输出：
+### 自动事务管理
+
+- **自动开启**: INSERT/UPDATE/DELETE操作自动开启事务
+- **智能记录**: 记录每个操作的详细信息和回滚查询
+- **精确回滚**: 支持回滚到任意操作步骤
+
+### 事务历史示例
+
+```
+📋 事务历史记录
+
+🔹 步骤 1 (2024-01-15 10:30:15)
+   类型: INSERT | 表: users | 影响行数: 1
+   描述: 执行 INSERT 操作，影响 1 行
+   SQL: INSERT INTO users (name, email) VALUES (?, ?)
+   回滚: DELETE FROM users WHERE id = ?
+
+🔹 步骤 2 (2024-01-15 10:31:22)  
+   类型: UPDATE | 表: users | 影响行数: 1
+   描述: 执行 UPDATE 操作，影响 1 行
+   SQL: UPDATE users SET age = ? WHERE id = ?
+   回滚: UPDATE users SET age = ? WHERE id = ?
+
+💡 使用 rollback_to_step 可以回滚到任意步骤
+```
+
+## 📊 日志系统
+
+### 日志文件类型
+
+| 日志文件 | 内容 | 用途 |
+|---------|------|------|
+| `combined-*.log` | 所有日志信息 | 全面的操作记录 |
+| `error-*.log` | 错误信息 | 问题诊断 |
+| `database-*.log` | 数据库操作 | SQL执行追踪 |
+| `exceptions-*.log` | 异常信息 | 系统异常分析 |
+
+### 查看日志
 
 ```bash
-# 设置调试环境变量
-set DEBUG=mysql-mcp:*
-npm run start-gateway
+# 查看实时日志
+npm run logs:tail
 
-# Linux/Mac用户
-DEBUG=mysql-mcp:* npm run start-gateway
+# 查看错误日志
+npm run logs:errors
+
+# 分析数据库操作
+npm run logs:db-analysis
 ```
 
 ## 💡 使用技巧
 
 ### 🎯 最佳实践
 
-1. **连接管理**
+1. **数据探索**
    ```
-   # 好的做法：连接前先断开之前的连接
-   请先断开当前数据库连接，然后连接到新的数据库
-   ```
-
-2. **查询优化**
-   ```
-   # 大表查询时限制结果数量
-   请查询users表，限制100条记录并按ID排序
+   先用show_tables了解整体结构
+   再用describe_table查看具体表
+   最后用execute_query进行操作
    ```
 
-3. **安全查询**
+2. **安全修改**
    ```
-   # 避免查询敏感信息
-   请查询用户表，但不要显示密码字段
-   ```
-
-### 🚀 高效使用
-
-1. **批量操作**
-   ```
-   请依次执行以下操作：
-   1. 连接到数据库
-   2. 显示所有表
-   3. 查询每个表的记录数
-   4. 断开连接
+   重要操作前先SELECT确认数据
+   使用事务保护批量修改
+   及时查看事务历史
    ```
 
-2. **数据分析**
+3. **性能优化**
    ```
-   请分析sales表，我需要了解：
-   - 总销售额
-   - 平均订单金额
-   - 最畅销的产品
-   - 销售趋势
+   使用LIMIT限制结果集大小
+   添加WHERE条件过滤数据
+   查看日志分析慢查询
    ```
+
+### 🚀 高级用法
+
+```sql
+-- 复杂查询
+SELECT u.name, COUNT(o.id) as order_count, SUM(o.amount) as total_amount
+FROM users u 
+LEFT JOIN orders o ON u.id = o.user_id 
+WHERE u.created_at >= '2024-01-01'
+GROUP BY u.id, u.name
+HAVING total_amount > 1000
+ORDER BY total_amount DESC
+LIMIT 20
+
+-- 批量操作
+INSERT INTO products (name, price, category_id) VALUES 
+('产品A', 99.99, 1),
+('产品B', 149.99, 2),
+('产品C', 199.99, 1)
+
+-- 条件更新
+UPDATE inventory 
+SET stock = stock - 1 
+WHERE product_id = 123 AND stock > 0
+```
 
 ## 🔒 安全说明
 
-### 🛡️ 内置安全特性
+### ⚠️ 重要提醒
 
-1. **只读模式**: 默认只允许SELECT查询
-2. **SQL注入防护**: 自动过滤危险字符和语句
-3. **操作限制**: 禁止DROP、DELETE、UPDATE、INSERT等危险操作
-4. **参数验证**: 严格验证所有输入参数
+- **完整权限**: 2.0版本支持完整CRUD操作，请谨慎使用
+- **事务保护**: 所有修改操作都有事务保护和回滚功能
+- **日志记录**: 所有操作都会被详细记录
+- **用户权限**: 建议创建专门的数据库用户，限制必要权限
 
-### 🔐 安全建议
+### 🛡️ 安全建议
 
-1. **数据库用户权限**
+1. **数据库用户**
    ```sql
-   -- 创建只读用户（推荐）
    CREATE USER 'mcp_user'@'localhost' IDENTIFIED BY 'strong_password';
-   GRANT SELECT ON your_database.* TO 'mcp_user'@'localhost';
-   FLUSH PRIVILEGES;
+   GRANT SELECT, INSERT, UPDATE, DELETE ON your_database.* TO 'mcp_user'@'localhost';
    ```
 
-2. **网络安全**
-   - 仅在可信网络环境中使用
-   - 避免在公共网络中暴露数据库端口
+2. **备份策略**
+   ```
+   重要操作前先备份数据
+   定期检查事务历史
+   保留操作日志用于审计
+   ```
 
-3. **密码管理**
-   - 使用强密码
-   - 定期更换密码
-   - 考虑使用环境变量存储敏感信息
+## ❗ 故障排除
 
-## 📋 常见问题
+### 常见问题
 
-### ❓ Q1: MCP是什么？为什么不使用普通的API？
+1. **连接失败**
+   ```
+   检查MySQL服务是否运行
+   确认连接参数正确
+   查看error日志获取详细信息
+   ```
 
-**A**: MCP（Model Context Protocol）是Anthropic开发的协议，专门为AI助手访问外部工具而设计。相比普通API，MCP提供：
-- 标准化的工具描述格式
-- 更好的AI集成体验
-- 自动的权限管理
-- 内置的安全机制
+2. **权限错误**
+   ```
+   确认数据库用户权限
+   检查表的访问权限
+   查看MySQL错误日志
+   ```
 
-### ❓ Q2: 为什么选择stdio模式而不是HTTP API？
-
-**A**: stdio模式的优势：
-- 🔒 更安全：不需要开放网络端口
-- 🚀 更简单：无需配置网络和认证
-- 📦 更轻量：直接进程通信，性能更好
-- 🛡️ 更隔离：每个客户端独立进程
-
-### ❓ Q3: 可以连接远程MySQL数据库吗？
-
-**A**: 可以！只需要在连接时指定远程主机地址：
-```
-请连接到远程数据库：
-- 主机: 192.168.1.100
-- 端口: 3306
-- 用户名: remote_user
-- 密码: remote_password
-- 数据库: remote_db
-```
-
-### ❓ Q4: 支持其他数据库吗？
-
-**A**: 目前只支持MySQL，但架构设计支持扩展。未来计划支持：
-- PostgreSQL
-- SQLite
-- SQL Server
-- Oracle
-
-### ❓ Q5: 如何备份和恢复配置？
-
-**A**: 
-```bash
-# 备份配置
-cp ~/.vscode/mcp-settings.json ~/mcp-backup.json
-
-# 恢复配置
-cp ~/mcp-backup.json ~/.vscode/mcp-settings.json
-```
-
-### ❓ Q6: 能否支持写操作？
-
-**A**: 出于安全考虑，默认只支持读操作。如果需要写操作，可以：
-1. 修改 `src/database.ts` 中的安全限制
-2. 重新构建项目
-3. ⚠️ **注意**: 这会增加数据风险，请谨慎操作
-
-### ❓ Q7: 如何监控MCP服务器状态？
-
-**A**: 
-```bash
-# 检查进程
-ps aux | grep "mysql-mcp"
-
-# 检查端口（HTTP模式）
-netstat -an | grep 3100
-
-# 查看日志
-tail -f ~/.vscode/logs/mcp-mysql.log
-```
-
-## 🏗️ 项目结构
-
-```
-my-awesome-mcp/
-├── src/
-│   ├── index.ts              # 🚀 MCP服务器入口点
-│   └── database.ts           # 🗄️ 数据库管理器类
-├── dist/                     # 📦 编译后的JavaScript文件
-├── node_modules/             # 📚 依赖包
-├── package.json              # ⚙️ 项目配置和脚本
-├── tsconfig.json            # 🔧 TypeScript编译配置
-├── README.md                # 📖 详细使用说明（本文件）
-├── test-install.bat         # 🛠️ Windows一键安装脚本
-└── .env.example            # 🔐 环境变量示例文件
-```
-
-## 🔄 版本更新
-
-### 当前版本: v1.0.0
-
-#### 更新日志
-- ✅ 修复supergateway包名错误
-- ✅ 添加HTTP/SSE模式支持
-- ✅ 增强安全性检查
-- ✅ 优化错误处理
-- ✅ 完善文档说明
-
-#### 更新方法
-```bash
-# 获取最新代码
-git pull origin main
-
-# 更新依赖
-npm install
-
-# 重新构建
-npm run build
-```
-
-## 📞 技术支持
-
-### 🐛 遇到问题？
-
-1. **查看错误日志**: 在VSCode开发者控制台查看详细错误信息
-2. **检查配置**: 确保所有路径和参数正确
-3. **重新安装**: 删除node_modules后重新安装
-4. **查看文档**: 本README包含了大部分常见问题的解决方案
-
-### 📧 联系方式
-
-- **GitHub Issues**: 在项目仓库提交issue
-- **讨论交流**: 在GitHub Discussions中讨论
-- **快速帮助**: 在Cline中询问："如何使用MySQL MCP服务器？"
-
-## 🙏 致谢
-
-感谢以下开源项目的支持：
-- [Model Context Protocol](https://modelcontextprotocol.io/) - Anthropic的MCP协议
-- [mysql2](https://github.com/sidorares/node-mysql2) - Node.js MySQL客户端
-- [supergateway](https://github.com/supercorp-ai/supergateway) - MCP传输层网关
-
-## 📄 许可证
-
-本项目采用 ISC 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+3. **事务问题**
+   ```
+   使用show_transaction_history查看状态
+   必要时使用full_rollback重置
+   检查database日志分析问题
+   ```
 
 ---
 
-> 💡 **提示**: 如果这个README帮助到了你，请给项目点个⭐Star！有问题欢迎提Issue！
+## 📞 支持与反馈
 
-**🎉 现在就开始在AI对话中使用MySQL数据库吧！** 
+- 🐛 **问题报告**: [GitHub Issues](https://github.com/guangxiangdebizi/MySQL_MCP/issues)
+- 💡 **功能建议**: [GitHub Discussions](https://github.com/guangxiangdebizi/MySQL_MCP/discussions)
+- 📧 **联系作者**: 通过GitHub私信
+
+---
+
+**⭐ 如果这个项目对你有帮助，请给个Star支持一下！**
