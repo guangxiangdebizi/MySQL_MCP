@@ -1,0 +1,6 @@
+[2025-06-30 13:44:25] ERROR: 工具调用失败
+Error: 查询执行失败: Unknown column '0' in 'field list'
+    at DatabaseManager.executeQuery (file:///C:/Users/26214/Desktop/my-awesome-mcp/dist/database.js:97:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DatabaseManager.insertData (file:///C:/Users/26214/Desktop/my-awesome-mcp/dist/database.js:236:16)
+    at async file:///C:/Users/26214/Desktop/my-awesome-mcp/dist/index.js:329:32

@@ -10,9 +10,14 @@
     "build": "tsc",
     "dev": "ts-node --esm src/index.ts",
     "start": "node dist/index.js",
-    "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3100",
+    "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3101",
     "install-global": "npm run build && npm install -g .",
     "quick-setup": "npm install && npm run build && echo \"✅ 安装完成！请查看 README.md 了解配置方法\"",
+    "logs": "npm run build && node dist/log-viewer.js",
+    "logs:errors": "npm run build && node dist/log-viewer.js errors",
+    "logs:stats": "npm run build && node dist/log-viewer.js stats",
+    "logs:db": "npm run build && node dist/log-viewer.js db-analysis",
+    "logs:tail": "npm run build && node dist/log-viewer.js tail",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["mcp", "mysql", "database"],
@@ -21,7 +26,9 @@
   "description": "MySQL MCP Server for database interactions",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "mysql2": "^3.6.5"
+    "mysql2": "^3.6.5",
+    "winston": "^3.13.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
