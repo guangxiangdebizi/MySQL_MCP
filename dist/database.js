@@ -274,9 +274,29 @@ export class DatabaseManager {
     /**
      * 判断是否为SELECT查询
      */
+    isSelectQuery(query) {
+        const upperQuery = query.toUpperCase().trim();
+        return upperQuery.startsWith('SELECT') || upperQuery.startsWith('SHOW') || upperQuery.startsWith('DESCRIBE') || upperQuery.startsWith('DESC');
+    }
+    /**
+     * 获取查询类型
+     */
+    getQueryType(query) {
+        const upperQuery = query.toUpperCase().trim();
+        const firstWord = upperQuery.split(' ')[0];
+        return firstWord || 'UNKNOWN';
+    }
+    /**
+     * 判断是否为危险查询
+     */
     isDangerousQuery(query) {
-        const dangerousPattern = /\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE|LOAD|IMPORT)\b/i;
-        return dangerousPattern.test(query.trim());
+        const dangerousKeywords = [
+            'DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER',
+            'TRUNCATE', 'CREATE', 'REPLACE', 'LOAD', 'IMPORT'
+        ];
+        const upperQuery = query.toUpperCase().trim();
+        return dangerousKeywords.some(keyword => upperQuery.startsWith(keyword + ' ') ||
+            upperQuery.includes(' ' + keyword + ' '));
     }
     /**
      * 验证表名是否合法
