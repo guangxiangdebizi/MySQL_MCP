@@ -174,8 +174,8 @@ DELETE → INSERT INTO table (col1, col2) VALUES (?, ?)
 ### 🔧 快速安装
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/guangxiangdebizi/MySQL_MCP
+# 下载项目
+git clone https://github.com/guangxiangdebizi/MySQL_MCP.git
 cd MySQL_MCP
 
 # 2. 安装依赖

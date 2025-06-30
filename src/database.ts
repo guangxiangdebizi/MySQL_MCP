@@ -308,18 +308,17 @@ export class DatabaseManager {
   /**
    * 判断是否为SELECT查询
    */
-  private isSelectQuery(query: string): boolean {
+  private isDangerousQuery(query: string): boolean {
+    const dangerousKeywords = [
+      'DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 
+      'TRUNCATE', 'CREATE', 'REPLACE', 'LOAD', 'IMPORT'
+    ];
+    
     const upperQuery = query.toUpperCase().trim();
-    return upperQuery.startsWith('SELECT') || upperQuery.startsWith('SHOW') || upperQuery.startsWith('DESCRIBE') || upperQuery.startsWith('DESC');
-  }
-
-  /**
-   * 获取查询类型
-   */
-  private getQueryType(query: string): string {
-    const upperQuery = query.toUpperCase().trim();
-    const firstWord = upperQuery.split(' ')[0];
-    return firstWord || 'UNKNOWN';
+    return dangerousKeywords.some(keyword => 
+      upperQuery.startsWith(keyword + ' ') || 
+      upperQuery.includes(' ' + keyword + ' ')
+    );
   }
 
   /**
