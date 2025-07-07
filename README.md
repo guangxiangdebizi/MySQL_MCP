@@ -221,7 +221,7 @@ npm test
 
 启动服务器：
 ```bash
-npm run start:gateway
+npm run start-gateway
 ```
 
 ## 🎮 使用指南
