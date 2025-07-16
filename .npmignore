@@ -1,0 +1,65 @@
+# 源代码（只发布编译后的dist目录）
+src/
+*.ts
+!*.d.ts
+
+# 开发相关
+node_modules/
+.git/
+.gitignore
+.dockerignore
+
+# 测试和开发工具
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# 日志文件
+logs/
+*.log
+
+# 开发配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 环境和配置
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 构建相关
+.tsbuildinfo
+tsconfig.json
+tsconfig.*.json
+
+# Docker相关
+Dockerfile*
+docker-compose*.yml
+
+# 临时文件
+tmp/
+temp/
+.cache/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# NPM
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 开发脚本
+test-install.bat
+
+# 只保留必要的文档
+推文介绍.txt 

@@ -1,10 +1,20 @@
 {
-  "name": "my-awesome-mcp",
-  "version": "1.0.0",
+  "name": "@neigezhujiayi/mysql-mcp-server",
+  "version": "2.0.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mysql-mcp-server": "dist/index.js"
+    "guangxiang-mysql-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "README_ENHANCED.md",
+    "SMITHERY_DEPLOY.md",
+    "smithery.yaml"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "build": "tsc",
@@ -13,6 +23,7 @@
     "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3101",
     "install-global": "npm run build && npm install -g .",
     "quick-setup": "npm install && npm run build && echo \"✅ 安装完成！请查看 README.md 了解配置方法\"",
+    "prepublishOnly": "npm run build",
     "logs": "npm run build && node dist/log-viewer.js",
     "logs:errors": "npm run build && node dist/log-viewer.js errors",
     "logs:stats": "npm run build && node dist/log-viewer.js stats",
@@ -20,10 +31,32 @@
     "logs:tail": "npm run build && node dist/log-viewer.js tail",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["mcp", "mysql", "database"],
-  "author": "",
-  "license": "ISC",
-  "description": "MySQL MCP Server for database interactions",
+  "keywords": [
+    "mcp",
+    "mysql",
+    "database",
+    "model-context-protocol",
+    "ai-assistant",
+    "vscode",
+    "cline",
+    "sql",
+    "crud",
+    "transaction"
+  ],
+  "author": {
+    "name": "guangxiangdebizi",
+    "url": "https://github.com/guangxiangdebizi"
+  },
+  "license": "MIT",
+  "description": "功能强大的MySQL数据库MCP服务器，支持完整CRUD操作、智能事务管理和回滚功能，专为AI助手设计",
+  "homepage": "https://github.com/guangxiangdebizi/MySQL_MCP#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guangxiangdebizi/MySQL_MCP.git"
+  },
+  "bugs": {
+    "url": "https://github.com/guangxiangdebizi/MySQL_MCP/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "mysql2": "^3.6.5",
