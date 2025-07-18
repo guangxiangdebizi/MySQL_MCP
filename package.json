@@ -1,6 +1,6 @@
 {
   "name": "@neigezhujiayi/mysql-mcp-server",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -48,7 +48,7 @@
     "url": "https://github.com/guangxiangdebizi"
   },
   "license": "MIT",
-  "description": "功能强大的MySQL数据库MCP服务器，支持完整CRUD操作、智能事务管理和回滚功能，专为AI助手设计",
+  "description": "功能强大的MySQL数据库MCP服务器，支持多数据库连接、完整CRUD操作、智能事务管理和回滚功能，专为AI助手设计",
   "homepage": "https://github.com/guangxiangdebizi/MySQL_MCP#readme",
   "repository": {
     "type": "git",
