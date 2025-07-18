@@ -2,7 +2,7 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ErrorCode, } from "@modelcontextprotocol/sdk/types.js";
-import { DatabaseManager } from "./database.js";
+import { ConnectionManager } from "./connection-manager.js";
 import { logger } from "./logger.js";
 const server = new Server({
     name: "mysql-mcp-server",
@@ -12,8 +12,21 @@ const server = new Server({
         tools: {},
     },
 });
-// 全局数据库管理器实例
-let dbManager = null;
+// 全局连接管理器实例
+const connectionManager = new ConnectionManager();
+// 辅助函数：获取数据库管理器
+function getTargetManager(connection_id) {
+    const targetManager = connection_id
+        ? connectionManager.getConnection(connection_id)
+        : connectionManager.getActiveConnection();
+    if (!targetManager || !targetManager.isConnected()) {
+        const errorMsg = connection_id
+            ? `❌ 连接 '${connection_id}' 不存在或未连接`
+            : "❌ 没有活跃的数据库连接，请先使用 connect_database 工具连接到数据库";
+        throw new McpError(ErrorCode.InvalidRequest, errorMsg);
+    }
+    return targetManager;
+}
 // 列出可用工具
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
@@ -45,6 +58,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "要连接的数据库名称",
                         },
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，用于管理多个数据库连接）",
+                        },
                     },
                     required: ["host", "user", "password", "database"],
                 },
@@ -66,6 +83,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                                 type: "string"
                             }
                         },
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
                     },
                     required: ["query"],
                 },
@@ -75,7 +96,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "开始数据库事务",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -83,7 +109,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "提交数据库事务",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -91,7 +122,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "回滚数据库事务",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -99,7 +135,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "显示当前事务的操作历史",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -112,6 +153,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "number",
                             description: "要回滚到的步骤号（从操作历史中选择）",
                         },
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
                     },
                     required: ["step_number"],
                 },
@@ -121,7 +166,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "完全回滚当前事务的所有操作",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -129,7 +179,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "显示数据库中的所有表及其结构信息",
                 inputSchema: {
                     type: "object",
-                    properties: {},
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
+                    },
                 },
             },
             {
@@ -142,6 +197,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "要查看结构的表名",
                         },
+                        connection_id: {
+                            type: "string",
+                            description: "连接标识符（可选，不指定则使用当前活跃连接）",
+                        },
                     },
                     required: ["table_name"],
                 },
@@ -151,7 +210,48 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "断开数据库连接",
                 inputSchema: {
                     type: "object",
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "要断开的连接标识符（可选，不指定则断开当前活跃连接）",
+                        },
+                    },
+                },
+            },
+            {
+                name: "list_connections",
+                description: "列出所有数据库连接",
+                inputSchema: {
+                    type: "object",
                     properties: {},
+                },
+            },
+            {
+                name: "switch_active_connection",
+                description: "切换当前活跃的数据库连接",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "要切换到的连接标识符",
+                        },
+                    },
+                    required: ["connection_id"],
+                },
+            },
+            {
+                name: "remove_connection",
+                description: "移除指定的数据库连接",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        connection_id: {
+                            type: "string",
+                            description: "要移除的连接标识符",
+                        },
+                    },
+                    required: ["connection_id"],
                 },
             },
         ],
@@ -165,59 +265,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "connect_database": {
-                const { host, port = 3306, user, password, database } = args;
-                // 如果已有连接，先断开
-                if (dbManager) {
-                    await dbManager.disconnect();
-                }
-                // 创建新的数据库管理器并连接
-                dbManager = new DatabaseManager();
-                await dbManager.connect({ host, port, user, password, database });
+                const { host, port = 3306, user, password, database, connection_id } = args;
+                // 生成连接ID（如果未提供）
+                const connId = connection_id || `${host}_${database}_${Date.now()}`;
+                // 添加新连接
+                await connectionManager.addConnection(connId, { host, port, user, password, database });
+                const totalConnections = connectionManager.getConnectionCount();
+                const isActive = connectionManager.getActiveConnectionId() === connId;
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `✅ 成功连接到MySQL数据库！\n📍 主机: ${host}:${port}\n🗄️ 数据库: ${database}\n👤 用户: ${user}`,
+                            text: `✅ 成功连接到MySQL数据库！\n📍 连接ID: ${connId}\n📍 主机: ${host}:${port}\n🗄️ 数据库: ${database}\n👤 用户: ${user}\n🎯 活跃连接: ${isActive ? '是' : '否'}\n📊 总连接数: ${totalConnections}`,
                         },
                     ],
                 };
             }
             case "execute_query": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
+                const { query, params = [], connection_id } = args;
+                // 获取目标数据库管理器
+                const targetManager = connection_id
+                    ? connectionManager.getConnection(connection_id)
+                    : connectionManager.getActiveConnection();
+                if (!targetManager || !targetManager.isConnected()) {
+                    const errorMsg = connection_id
+                        ? `❌ 连接 '${connection_id}' 不存在或未连接`
+                        : "❌ 没有活跃的数据库连接，请先使用 connect_database 工具连接到数据库";
+                    throw new McpError(ErrorCode.InvalidRequest, errorMsg);
                 }
-                const { query, params = [] } = args;
-                const result = await dbManager.executeQuery(query, params);
+                const result = await targetManager.executeQuery(query, params);
+                const activeConnId = connectionManager.getActiveConnectionId();
+                const usedConnId = connection_id || activeConnId;
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `✅ SQL执行成功！\n\n📊 操作类型: ${result.type}\n⏱️ 执行时间: ${result.duration}ms\n\n📋 结果:\n${JSON.stringify(result, null, 2)}`,
+                            text: `✅ SQL执行成功！\n🔗 使用连接: ${usedConnId}\n📊 操作类型: ${result.type}\n⏱️ 执行时间: ${result.duration}ms\n\n📋 结果:\n${JSON.stringify(result, null, 2)}`,
                         },
                     ],
                 };
             }
             case "begin_transaction": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                await dbManager.beginTransaction();
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                await targetManager.beginTransaction();
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `✅ 事务已开始！\n\n⚠️ 请记得在操作完成后提交或回滚事务`,
+                            text: `✅ 事务已开始！\n🔗 连接: ${connection_id || connectionManager.getActiveConnectionId()}\n\n⚠️ 请记得在操作完成后提交或回滚事务`,
                         },
                     ],
                 };
             }
             case "commit_transaction": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const transactionManager = dbManager.getTransactionManager();
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const transactionManager = targetManager.getTransactionManager();
                 const result = await transactionManager.commitTransaction(async () => {
-                    return await dbManager.commitTransaction();
+                    return await targetManager.commitTransaction();
                 });
                 return {
                     content: [
@@ -229,12 +335,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "rollback_transaction": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const transactionManager = dbManager.getTransactionManager();
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const transactionManager = targetManager.getTransactionManager();
                 const result = await transactionManager.fullRollback(async (query, params) => {
-                    return await dbManager.executeQuery(query, params || []);
+                    return await targetManager.executeQuery(query, params || []);
                 });
                 return {
                     content: [
@@ -246,28 +351,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "show_transaction_history": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const transactionManager = dbManager.getTransactionManager();
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const transactionManager = targetManager.getTransactionManager();
                 const historyText = transactionManager.getRollbackOptions();
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `📋 事务操作历史\n\n${historyText}`,
+                            text: `📋 事务操作历史\n🔗 连接: ${connection_id || connectionManager.getActiveConnectionId()}\n\n${historyText}`,
                         },
                     ],
                 };
             }
             case "rollback_to_step": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const { step_number } = args;
-                const transactionManager = dbManager.getTransactionManager();
+                const { step_number, connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const transactionManager = targetManager.getTransactionManager();
                 const result = await transactionManager.rollbackToStep(step_number, async (query, params) => {
-                    return await dbManager.executeQuery(query, params || []);
+                    return await targetManager.executeQuery(query, params || []);
                 });
                 return {
                     content: [
@@ -279,12 +381,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "full_rollback": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const transactionManager = dbManager.getTransactionManager();
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const transactionManager = targetManager.getTransactionManager();
                 const result = await transactionManager.fullRollback(async (query, params) => {
-                    return await dbManager.executeQuery(query, params || []);
+                    return await targetManager.executeQuery(query, params || []);
                 });
                 return {
                     content: [
@@ -296,11 +397,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "show_tables": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const tables = await dbManager.showTables();
-                let result = `📋 数据库概览\n\n`;
+                const { connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
+                const tables = await targetManager.showTables();
+                let result = `📋 数据库概览\n🔗 连接: ${connection_id || connectionManager.getActiveConnectionId()}\n\n`;
                 if (tables.length === 0) {
                     result += "🔍 数据库中没有找到任何表";
                 }
@@ -310,10 +410,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         const tableName = Object.values(table)[0];
                         try {
                             // 获取表的行数
-                            const countResult = await dbManager.executeQuery(`SELECT COUNT(*) as count FROM \`${tableName}\``);
+                            const countResult = await targetManager.executeQuery(`SELECT COUNT(*) as count FROM \`${tableName}\``);
                             const rowCount = countResult.data[0]?.count || 0;
                             // 获取表结构（只显示列名和类型）
-                            const structure = await dbManager.describeTable(tableName);
+                            const structure = await targetManager.describeTable(tableName);
                             const columnInfo = structure.map((col) => `${col.Field}(${col.Type})`).slice(0, 5).join(', ');
                             const moreColumns = structure.length > 5 ? `... +${structure.length - 5}列` : '';
                             result += `🗂️ **${tableName}**\n`;
@@ -337,19 +437,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "describe_table": {
-                if (!dbManager || !dbManager.isConnected()) {
-                    throw new McpError(ErrorCode.InvalidRequest, "❌ 请先使用 connect_database 工具连接到数据库");
-                }
-                const { table_name } = args;
+                const { table_name, connection_id } = args;
+                const targetManager = getTargetManager(connection_id);
                 // 获取表结构
-                const structure = await dbManager.describeTable(table_name);
+                const structure = await targetManager.describeTable(table_name);
                 // 获取表的行数
-                const countResult = await dbManager.executeQuery(`SELECT COUNT(*) as count FROM \`${table_name}\``);
+                const countResult = await targetManager.executeQuery(`SELECT COUNT(*) as count FROM \`${table_name}\``);
                 const totalRows = countResult.data[0]?.count || 0;
                 // 获取样本数据（最多5行）
                 let sampleData = [];
                 if (totalRows > 0) {
-                    const sampleResult = await dbManager.executeQuery(`SELECT * FROM \`${table_name}\` LIMIT 5`);
+                    const sampleResult = await targetManager.executeQuery(`SELECT * FROM \`${table_name}\` LIMIT 5`);
                     sampleData = sampleResult.data;
                 }
                 // 格式化表结构
@@ -385,15 +483,80 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "disconnect_database": {
-                if (dbManager) {
-                    await dbManager.disconnect();
-                    dbManager = null;
+                const { connection_id } = args;
+                const targetManager = connection_id
+                    ? connectionManager.getConnection(connection_id)
+                    : connectionManager.getActiveConnection();
+                if (connection_id) {
+                    // 移除指定连接
+                    await connectionManager.removeConnection(connection_id);
+                }
+                else if (connectionManager.hasActiveConnection()) {
+                    // 移除活跃连接
+                    const activeId = connectionManager.getActiveConnectionId();
+                    if (activeId) {
+                        await connectionManager.removeConnection(activeId);
+                    }
                 }
                 return {
                     content: [
                         {
                             type: "text",
                             text: "✅ 数据库连接已断开",
+                        },
+                    ],
+                };
+            }
+            case "list_connections": {
+                const connections = connectionManager.listConnections();
+                if (connections.length === 0) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `📋 数据库连接列表\n\n🔍 当前没有任何数据库连接`,
+                            },
+                        ],
+                    };
+                }
+                let result = `📋 数据库连接列表\n\n📊 总连接数: ${connections.length}\n\n`;
+                connections.forEach((conn, index) => {
+                    result += `${index + 1}. 🔗 **${conn.id}**${conn.isActive ? ' 🎯(活跃)' : ''}\n`;
+                    result += `   📍 主机: ${conn.host}:${conn.port}\n`;
+                    result += `   🗄️ 数据库: ${conn.database}\n`;
+                    result += `   👤 用户: ${conn.user}\n`;
+                    result += `   ⏰ 连接时间: ${new Date(conn.connectedAt).toLocaleString()}\n\n`;
+                });
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: result,
+                        },
+                    ],
+                };
+            }
+            case "switch_active_connection": {
+                const { connection_id } = args;
+                await connectionManager.switchActiveConnection(connection_id);
+                const connection = connectionManager.listConnections().find(c => c.id === connection_id);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `✅ 已切换活跃连接到: ${connection_id}\n📍 数据库: ${connection?.database}\n📊 当前总连接数: ${connectionManager.getConnectionCount()}`,
+                        },
+                    ],
+                };
+            }
+            case "remove_connection": {
+                const { connection_id } = args;
+                await connectionManager.removeConnection(connection_id);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `✅ 已移除连接: ${connection_id}\n📊 剩余连接数: ${connectionManager.getConnectionCount()}`,
                         },
                     ],
                 };
@@ -440,17 +603,15 @@ async function main() {
 // 优雅关闭处理
 process.on("SIGINT", async () => {
     logger.info("接收到SIGINT信号，正在关闭服务器...");
-    if (dbManager) {
-        await dbManager.disconnect();
-    }
+    // 断开所有连接
+    connectionManager.disconnectAll();
     logger.info("服务器已关闭");
     process.exit(0);
 });
 process.on("SIGTERM", async () => {
     logger.info("接收到SIGTERM信号，正在关闭服务器...");
-    if (dbManager) {
-        await dbManager.disconnect();
-    }
+    // 断开所有连接
+    connectionManager.disconnectAll();
     logger.info("服务器已关闭");
     process.exit(0);
 });
