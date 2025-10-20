@@ -39,7 +39,7 @@ npm publish --tag beta
 ```
 
 #### 3. 验证发布
-访问：https://www.npmjs.com/package/@neigezhujiayi/mysql-mcp-server
+访问：https://www.npmjs.com/package/@xingyuchen/mysql-mcp-server
 
 ### 📈 版本管理
 
@@ -65,7 +65,7 @@ npm publish
 
 ```bash
 # 全局安装
-npm install -g @neigezhujiayi/mysql-mcp-server
+npm install -g @xingyuchen/mysql-mcp-server
 
 # 验证安装
 guangxiang-mysql-mcp --help
@@ -75,10 +75,10 @@ guangxiang-mysql-mcp --help
 
 ```bash
 # 本地安装
-npm install @neigezhujiayi/mysql-mcp-server
+npm install @xingyuchen/mysql-mcp-server
 
 # 运行
-npx @neigezhujiayi/mysql-mcp-server
+npx @xingyuchen/mysql-mcp-server
 ```
 
 ### ⚙️ 在MCP客户端中配置
@@ -101,7 +101,7 @@ npx @neigezhujiayi/mysql-mcp-server
   "mcpServers": {
     "mysql-database": {
       "command": "npx",
-      "args": ["@neigezhujiayi/mysql-mcp-server"],
+      "args": ["@xingyuchen/mysql-mcp-server"],
       "env": {}
     }
   }
@@ -112,7 +112,7 @@ npx @neigezhujiayi/mysql-mcp-server
 
 1. **安装包**
    ```bash
-   npm install -g @neigezhujiayi/mysql-mcp-server
+   npm install -g @xingyuchen/mysql-mcp-server
    ```
 
 2. **配置Cline**
@@ -132,7 +132,7 @@ npx @neigezhujiayi/mysql-mcp-server
 
 ## 📊 包信息
 
-- **包名**: `@neigezhujiayi/mysql-mcp-server`
+- **包名**: `@xingyuchen/mysql-mcp-server`
 - **版本**: `2.0.0`
 - **主页**: https://github.com/guangxiangdebizi/MySQL_MCP
 - **问题反馈**: https://github.com/guangxiangdebizi/MySQL_MCP/issues

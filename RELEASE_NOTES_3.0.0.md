@@ -147,10 +147,10 @@ execute_query("SELECT COUNT(*) FROM users WHERE status = 'active'", connection_i
 
 ```bash
 # 卸载旧版本
-npm uninstall -g @neigezhujiayi/mysql-mcp-server
+npm uninstall -g @xingyuchen/mysql-mcp-server
 
 # 安装新版本
-npm install -g @neigezhujiayi/mysql-mcp-server@3.0.0
+npm install -g @xingyuchen/mysql-mcp-server@3.0.0
 
 # 验证版本
 guangxiang-mysql-mcp --version
@@ -209,7 +209,7 @@ guangxiang-mysql-mcp --version
 ## 📦 快速安装
 
 ```bash
-npm install -g @neigezhujiayi/mysql-mcp-server@3.0.0
+npm install -g @xingyuchen/mysql-mcp-server@3.0.0
 ```
 
 ## 🔗 相关链接

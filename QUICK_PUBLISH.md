@@ -26,7 +26,7 @@ npm login
 npm publish
 
 # 发布成功后验证
-npm view @neigezhujiayi/mysql-mcp-server
+npm view @xingyuchen/mysql-mcp-server
 ```
 
 ## 🎯 发布后用户安装
@@ -35,7 +35,7 @@ npm view @neigezhujiayi/mysql-mcp-server
 
 ```bash
 # 全局安装
-npm install -g @neigezhujiayi/mysql-mcp-server
+npm install -g @xingyuchen/mysql-mcp-server
 
 # 验证安装
 guangxiang-mysql-mcp --help

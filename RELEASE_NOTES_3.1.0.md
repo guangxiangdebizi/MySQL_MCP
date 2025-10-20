@@ -192,7 +192,7 @@ HTTP 模式是**可选的**新功能，不影响现有 stdio 模式用户。
 ### 全局升级
 
 ```bash
-npm install -g @neigezhujiayi/mysql-mcp-server@3.1.0
+npm install -g @xingyuchen/mysql-mcp-server@3.1.0
 ```
 
 ### 从源码升级

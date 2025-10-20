@@ -23,7 +23,7 @@
 ## 🌟 功能特性
 
 ### ✨ 核心功能
-- 📦 **NPM包支持**: 一键安装 `npm install -g @neigezhujiayi/mysql-mcp-server`，即装即用
+- 📦 **NPM包支持**: 一键安装 `npm install -g @xingyuchen/mysql-mcp-server`，即装即用
 - 🌐 **双模式部署**: 支持 stdio 模式（本地）和 StreamableHTTP 模式（服务器）
 - 🔐 **Header 预配置**: 通过 HTTP Headers 传递数据库连接信息，不暴露给 AI
 - 🔗 **多数据库连接**: 同时管理多个 MySQL 数据库连接，无需频繁切换
@@ -109,7 +109,7 @@ npm run start:http
 | 特性 | stdio 模式 | HTTP 模式 + Header 预配置 |
 |------|-----------|--------------------------|
 | **适用场景** | 本地使用 | 服务器部署 / 远程访问 |
-| **启动方式** | `npx -y @neigezhujiayi/mysql-mcp-server` | `npm run start:http` |
+| **启动方式** | `npx -y @xingyuchen/mysql-mcp-server` | `npm run start:http` |
 | **数据库连接** | AI询问用户后连接 | Headers预配置,自动连接 |
 | **安全性** | 中等（需告知AI） | 高（凭证不暴露给AI） |
 | **配置复杂度** | 简单 | 中等（需配置Headers） |
@@ -174,7 +174,7 @@ npm run start:http
 
 ```bash
 # 全局安装
-npm install -g @neigezhujiayi/mysql-mcp-server
+npm install -g @xingyuchen/mysql-mcp-server
 
 # 验证安装
 guangxiang-mysql-mcp --help
@@ -625,7 +625,7 @@ GRANT SELECT ON your_database.* TO 'mcp_readonly'@'localhost';
 - 💡 **功能建议**: [GitHub Discussions](https://github.com/guangxiangdebizi/MySQL_MCP/discussions)
 - 📧 **联系作者**: guangxiangdebizi@gmail.com
 - 💼 **LinkedIn**: [Xingyu Chen](https://www.linkedin.com/in/xingyu-chen-b5b3b0313/)
-- 📦 **NPM包**: [@neigezhujiayi/mysql-mcp-server](https://www.npmjs.com/package/@neigezhujiayi/mysql-mcp-server)
+- 📦 **NPM包**: [@xingyuchen/mysql-mcp-server](https://www.npmjs.com/package/@xingyuchen/mysql-mcp-server)
 
 ---
 

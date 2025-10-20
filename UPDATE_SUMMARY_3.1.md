@@ -221,7 +221,7 @@ git status
 npm publish
 
 # 4. 验证
-npm view @neigezhujiayi/mysql-mcp-server
+npm view @xingyuchen/mysql-mcp-server
 
 # 5. Git 提交和标签
 git add .

@@ -10,7 +10,7 @@
 
 ```bash
 # 1. 安装
-npm install -g @neigezhujiayi/mysql-mcp-server
+npm install -g @xingyuchen/mysql-mcp-server
 
 # 2. 启动 HTTP 服务器
 npm run start:http
@@ -46,7 +46,7 @@ npm run start:http
 
 ```bash
 # 1. 安装
-npm install -g @neigezhujiayi/mysql-mcp-server
+npm install -g @xingyuchen/mysql-mcp-server
 ```
 
 **2. 配置 Claude Desktop** (`claude_desktop_config.json`):
@@ -212,7 +212,7 @@ User: 在生产连接上执行查询
 
 - GitHub Issues: https://github.com/guangxiangdebizi/MySQL_MCP/issues
 - Email: guangxiangdebizi@gmail.com
-- NPM: https://www.npmjs.com/package/@neigezhujiayi/mysql-mcp-server
+- NPM: https://www.npmjs.com/package/@xingyuchen/mysql-mcp-server
 
 ---
 

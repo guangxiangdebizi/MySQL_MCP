@@ -212,7 +212,7 @@ X-MySQL-Database: mydb
   "mcpServers": {
     "mysql-mcp": {
       "command": "npx",
-      "args": ["-y", "@neigezhujiayi/mysql-mcp-server"],
+      "args": ["-y", "@xingyuchen/mysql-mcp-server"],
       "env": {
         "NODE_ENV": "production"
       }

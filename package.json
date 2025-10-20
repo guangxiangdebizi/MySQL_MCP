@@ -1,5 +1,5 @@
 {
-  "name": "@neigezhujiayi/mysql-mcp-server",
+  "name": "@xingyuchen/mysql-mcp-server",
   "version": "3.1.0",
   "type": "module",
   "main": "dist/index.js",
