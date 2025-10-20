@@ -16,7 +16,7 @@ import { logger } from "./logger.js";
 const server = new Server(
   {
     name: "mysql-mcp-server",
-    version: "3.1.0",
+    version: "3.2.0",
   },
   {
     capabilities: {

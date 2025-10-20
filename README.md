@@ -1,6 +1,6 @@
-# MySQL MCP Server 3.1 🚀
+# MySQL MCP Server 3.2 🚀
 
-一个功能强大且易用的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地进行完整的数据库操作。**v3.1 新增 StreamableHTTP 模式，支持 Header 预配置数据库连接，连接信息不会暴露给 AI！**
+一个功能强大且易用的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地进行完整的数据库操作。**v3.2 支持多数据库 Header 预配置，一次性配置多个数据库连接，连接信息不会暴露给 AI！**
 
 > **🎯 目标用户**: 希望在 Claude Desktop、VSCode Cline 等 MCP 客户端中使用 AI 助手进行 MySQL 数据库操作的开发者
 
@@ -45,9 +45,47 @@
 
 ---
 
-## 🆕 v3.1 新特性
+## 🆕 v3.2 新特性
 
-### 🌐 StreamableHTTP 模式
+### 🔢 多数据库 Header 预配置
+
+**一次性配置多个数据库**，通过 Headers 中的编号后缀（-1, -2, -3...）预配置多个数据库连接：
+
+```json
+{
+  "mcpServers": {
+    "mysql-mcp-http": {
+      "type": "streamableHttp",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "X-MySQL-Host-1": "prod.mysql.com",
+        "X-MySQL-User-1": "prod_user",
+        "X-MySQL-Password-1": "prod_pass",
+        "X-MySQL-Database-1": "production",
+        
+        "X-MySQL-Host-2": "test.mysql.com",
+        "X-MySQL-User-2": "test_user",
+        "X-MySQL-Password-2": "test_pass",
+        "X-MySQL-Database-2": "testing",
+        
+        "X-MySQL-Host-3": "dev.mysql.com",
+        "X-MySQL-User-3": "dev_user",
+        "X-MySQL-Password-3": "dev_pass",
+        "X-MySQL-Database-3": "development"
+      }
+    }
+  }
+}
+```
+
+**优点：**
+- ✅ 一次配置多个数据库（生产、测试、开发等）
+- ✅ 所有数据库凭证都不会暴露给 AI
+- ✅ 自动创建连接 ID：`header_db_1`, `header_db_2`, `header_db_3`
+- ✅ 使用 `list_connections` 查看所有连接
+- ✅ 使用 `switch_active_connection` 在数据库间切换
+
+### 🌐 StreamableHTTP 模式（v3.1）
 
 全新的 HTTP 服务器模式，支持远程部署和多用户访问：
 
@@ -58,11 +96,9 @@ npm run start:http
 # 服务运行在 http://localhost:3000/mcp
 ```
 
-### 🔐 Header 预配置连接 (推荐)
+### 🔐 Header 预配置连接
 
-**最大的安全改进**：数据库连接信息通过 HTTP Headers 预先配置，**不会暴露给 AI**！
-
-#### Claude Desktop 配置示例
+**单数据库配置**（v3.1，仍然支持）：
 
 ```json
 {
@@ -83,10 +119,34 @@ npm run start:http
 }
 ```
 
+**多数据库配置**（v3.2，推荐）：
+
+```json
+{
+  "mcpServers": {
+    "mysql-mcp-http": {
+      "type": "streamableHttp",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "X-MySQL-Host-1": "prod.mysql.com",
+        "X-MySQL-User-1": "prod_user",
+        "X-MySQL-Password-1": "prod_pass",
+        "X-MySQL-Database-1": "production",
+        
+        "X-MySQL-Host-2": "test.mysql.com",
+        "X-MySQL-User-2": "test_user",
+        "X-MySQL-Password-2": "test_pass",
+        "X-MySQL-Database-2": "testing"
+      }
+    }
+  }
+}
+```
+
 **优点：**
 - ✅ 数据库凭证不会暴露给 AI
 - ✅ 预先配置，无需每次连接
-- ✅ 更安全的部署方式
+- ✅ 支持多数据库（v3.2+）
 - ✅ 自动建立连接，开箱即用
 
 ### 🔧 兼容原有工具参数连接
@@ -122,19 +182,40 @@ npm run start:http
 ```
 📋 数据库连接列表
 
-📊 总连接数: 2
+📊 总连接数: 4
 
-1. 🔗 header_connection_abc123 🔐(Header预配置) 🎯(活跃)
-   📍 主机: localhost:3306
-   🗄️ 数据库: production_db
+1. 🔗 header_db_1 🔐(Header预配置) 🎯(活跃)
+   📍 主机: prod.mysql.com:3306
+   🗄️ 数据库: production
    👤 用户: prod_user
    ⏰ 连接时间: 2025-10-20 10:30:00
 
-2. 🔗 localhost_test_1729401234 🔧(工具参数)
+2. 🔗 header_db_2 🔐(Header预配置)
+   📍 主机: test.mysql.com:3306
+   🗄️ 数据库: testing
+   👤 用户: test_user
+   ⏰ 连接时间: 2025-10-20 10:30:01
+
+3. 🔗 header_db_3 🔐(Header预配置)
+   📍 主机: dev.mysql.com:3306
+   🗄️ 数据库: development
+   👤 用户: dev_user
+   ⏰ 连接时间: 2025-10-20 10:30:02
+
+4. 🔗 localhost_test_1729401234 🔧(工具参数)
    📍 主机: localhost:3306
    🗄️ 数据库: test_db
    👤 用户: test_user
    ⏰ 连接时间: 2025-10-20 10:35:00
+```
+
+**AI 使用示例：**
+```
+User: 切换到测试数据库
+AI: [调用 switch_active_connection，参数：header_db_2]
+
+User: 在生产数据库上查询用户总数
+AI: [调用 execute_query，参数：connection_id=header_db_1]
 ```
 
 ---
@@ -594,7 +675,14 @@ GRANT SELECT ON your_database.* TO 'mcp_readonly'@'localhost';
 
 ## 📦 版本历史
 
-### v3.1.0 (2025-10-20) 🆕
+### v3.2.0 (2025-10-20) 🆕
+- 🔢 支持多数据库 Header 预配置（X-MySQL-*-1, X-MySQL-*-2...）
+- ✨ 一次性配置多个数据库环境（生产、测试、开发等）
+- 🔄 自动创建多个 Header 连接（header_db_1, header_db_2...）
+- 📋 增强 list_connections 显示多数据库信息
+- 🔧 兼容单数据库 Header 配置（向后兼容）
+
+### v3.1.0 (2025-10-20)
 - ✨ 新增 StreamableHTTP 模式支持
 - 🔐 新增 HTTP Headers 预配置数据库连接
 - 🏷️ 连接来源标识（Header预配置 vs 工具参数）

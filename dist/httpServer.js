@@ -8,30 +8,65 @@ import { CallToolRequestSchema, ListToolsRequestSchema, McpError, ErrorCode } fr
 import { ConnectionManager } from "./connection-manager.js";
 import { logger } from "./logger.js";
 const sessions = new Map();
-// 从 headers 中提取数据库配置
-function extractDatabaseConfigFromHeaders(req) {
+// 从 headers 中提取数据库配置（支持多个数据库）
+function extractDatabaseConfigsFromHeaders(req) {
+    const configs = [];
+    // 尝试提取不带编号的配置（单数据库模式，兼容旧版）
     const host = req.headers['x-mysql-host'];
     const port = req.headers['x-mysql-port'];
     const user = req.headers['x-mysql-user'];
     const password = req.headers['x-mysql-password'];
     const database = req.headers['x-mysql-database'];
-    // 如果没有任何数据库配置,返回 null
-    if (!host && !user && !database) {
-        return null;
+    if (host && user && password && database) {
+        configs.push({
+            id: 'default',
+            host: host.trim(),
+            port: port ? parseInt(port) : 3306,
+            user: user.trim(),
+            password: password.trim(),
+            database: database.trim()
+        });
     }
-    return {
-        host: host?.trim(),
-        port: port ? parseInt(port) : undefined,
-        user: user?.trim(),
-        password: password?.trim(),
-        database: database?.trim()
-    };
+    // 尝试提取带编号的配置（多数据库模式）
+    // 支持 X-MySQL-Host-1, X-MySQL-Host-2, ... X-MySQL-Host-99
+    for (let i = 1; i <= 99; i++) {
+        const hostKey = `x-mysql-host-${i}`;
+        const portKey = `x-mysql-port-${i}`;
+        const userKey = `x-mysql-user-${i}`;
+        const passwordKey = `x-mysql-password-${i}`;
+        const databaseKey = `x-mysql-database-${i}`;
+        const hostN = req.headers[hostKey];
+        const portN = req.headers[portKey];
+        const userN = req.headers[userKey];
+        const passwordN = req.headers[passwordKey];
+        const databaseN = req.headers[databaseKey];
+        // 如果找不到 host，说明这个编号的配置不存在
+        if (!hostN) {
+            // 如果连续3个编号都没有配置，则停止搜索
+            if (i > 3 && !req.headers[`x-mysql-host-${i - 1}`] && !req.headers[`x-mysql-host-${i - 2}`]) {
+                break;
+            }
+            continue;
+        }
+        // 检查必填字段
+        if (hostN && userN && passwordN && databaseN) {
+            configs.push({
+                id: String(i),
+                host: hostN.trim(),
+                port: portN ? parseInt(portN) : 3306,
+                user: userN.trim(),
+                password: passwordN.trim(),
+                database: databaseN.trim()
+            });
+        }
+    }
+    return configs;
 }
 // 创建 MCP Server (每个会话一个实例)
 function createMCPServer(connectionManager) {
     const server = new Server({
         name: "mysql-mcp-server",
-        version: "3.1.0"
+        version: "3.2.0"
     }, {
         capabilities: {
             tools: {}
@@ -604,21 +639,32 @@ function createMCPServer(connectionManager) {
 }
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-// CORS 配置 - 允许自定义 Header
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: [
+// 生成允许的 Headers 列表（包括带编号的多数据库配置）
+function generateAllowedHeaders() {
+    const baseHeaders = [
         'Content-Type',
         'Accept',
         'Authorization',
         'Mcp-Session-Id',
+        // 单数据库配置（兼容性）
         'X-MySQL-Host',
         'X-MySQL-Port',
         'X-MySQL-User',
         'X-MySQL-Password',
         'X-MySQL-Database'
-    ],
+    ];
+    // 添加带编号的多数据库配置（1-20，足够应对大多数场景）
+    const mysqlHeaders = [];
+    for (let i = 1; i <= 20; i++) {
+        mysqlHeaders.push(`X-MySQL-Host-${i}`, `X-MySQL-Port-${i}`, `X-MySQL-User-${i}`, `X-MySQL-Password-${i}`, `X-MySQL-Database-${i}`);
+    }
+    return [...baseHeaders, ...mysqlHeaders];
+}
+// CORS 配置 - 允许自定义 Header（包括带编号的多数据库配置）
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: generateAllowedHeaders(),
     exposedHeaders: ['Content-Type', 'Mcp-Session-Id']
 }));
 app.use(express.json({ limit: "10mb" }));
@@ -628,7 +674,7 @@ app.get("/health", (_req, res) => {
         status: "healthy",
         transport: "streamable-http",
         activeSessions: sessions.size,
-        version: "3.1.0"
+        version: "3.2.0"
     });
 });
 // Streamable HTTP 主端点：POST /mcp（JSON-RPC）
@@ -669,7 +715,7 @@ app.all("/mcp", async (req, res) => {
                 id: newId,
                 server,
                 connectionManager,
-                headerConnectionId: null,
+                headerConnectionIds: [],
                 createdAt: new Date(),
                 lastActivity: new Date()
             };
@@ -684,43 +730,54 @@ app.all("/mcp", async (req, res) => {
                 id: null
             });
         }
-        // 检查并处理 Header 中的数据库配置
+        // 检查并处理 Header 中的数据库配置（支持多个数据库）
         if (session) {
-            const dbConfig = extractDatabaseConfigFromHeaders(req);
-            if (dbConfig && dbConfig.host && dbConfig.user && dbConfig.database) {
-                // 验证配置是否完整
-                if (!dbConfig.password) {
-                    logger.warn("Header 数据库配置不完整，缺少密码", { sessionId: session.id });
-                }
-                else {
-                    // 如果 header 中有数据库配置,自动建立连接
-                    const headerConnId = `header_connection_${session.id}`;
+            const dbConfigs = extractDatabaseConfigsFromHeaders(req);
+            if (dbConfigs.length > 0) {
+                logger.info(`检测到 ${dbConfigs.length} 个数据库配置`, {
+                    sessionId: session.id,
+                    configIds: dbConfigs.map(c => c.id)
+                });
+                for (const config of dbConfigs) {
+                    // 生成连接 ID
+                    const headerConnId = config.id === 'default'
+                        ? `header_db_default_${session.id}`
+                        : `header_db_${config.id}`;
                     try {
                         // 检查是否已经创建了这个连接
-                        if (!session.headerConnectionId ||
-                            !session.connectionManager.getConnection(session.headerConnectionId)) {
+                        if (!session.headerConnectionIds.includes(headerConnId) &&
+                            !session.connectionManager.getConnection(headerConnId)) {
                             await session.connectionManager.addConnection(headerConnId, {
-                                host: dbConfig.host,
-                                port: dbConfig.port || 3306,
-                                user: dbConfig.user,
-                                password: dbConfig.password,
-                                database: dbConfig.database
+                                host: config.host,
+                                port: config.port,
+                                user: config.user,
+                                password: config.password,
+                                database: config.database
                             });
-                            session.headerConnectionId = headerConnId;
+                            session.headerConnectionIds.push(headerConnId);
                             logger.info("从 Header 自动创建数据库连接", {
                                 sessionId: session.id,
                                 connectionId: headerConnId,
-                                host: dbConfig.host,
-                                database: dbConfig.database
+                                configId: config.id,
+                                host: config.host,
+                                database: config.database
                             });
                         }
                     }
                     catch (error) {
                         logger.error("从 Header 创建数据库连接失败", {
                             sessionId: session.id,
+                            connectionId: headerConnId,
+                            configId: config.id,
                             error: error instanceof Error ? error.message : String(error)
                         });
                     }
+                }
+                if (session.headerConnectionIds.length > 0) {
+                    logger.info(`成功创建 ${session.headerConnectionIds.length} 个 Header 预配置连接`, {
+                        sessionId: session.id,
+                        connectionIds: session.headerConnectionIds
+                    });
                 }
             }
         }
@@ -731,7 +788,7 @@ app.all("/mcp", async (req, res) => {
                 result: {
                     protocolVersion: "2024-11-05",
                     capabilities: { tools: {} },
-                    serverInfo: { name: "mysql-mcp-server", version: "3.1.0" }
+                    serverInfo: { name: "mysql-mcp-server", version: "3.2.0" }
                 },
                 id: body.id
             });
