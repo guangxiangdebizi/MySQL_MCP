@@ -1,10 +1,11 @@
 {
   "name": "@neigezhujiayi/mysql-mcp-server",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "guangxiang-mysql-mcp": "dist/index.js"
+    "guangxiang-mysql-mcp": "dist/index.js",
+    "guangxiang-mysql-mcp-http": "dist/httpServer.js"
   },
   "files": [
     "dist/**/*",
@@ -17,9 +18,12 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"try{require('fs').chmodSync('dist/index.js', '755')}catch(e){} try{require('fs').chmodSync('dist/httpServer.js', '755')}catch(e){}\"",
     "dev": "ts-node --esm src/index.ts",
+    "dev:http": "ts-node --esm src/httpServer.ts",
     "start": "node dist/index.js",
+    "start:stdio": "node dist/index.js",
+    "start:http": "node dist/httpServer.js",
     "start-gateway": "npm run build && npx supergateway --stdio \"node dist/index.js\" --port 3101",
     "install-global": "npm run build && npm install -g .",
     "quick-setup": "npm install && npm run build && echo \"✅ 安装完成！请查看 README.md 了解配置方法\"",
@@ -61,10 +65,15 @@
     "@modelcontextprotocol/sdk": "^1.12.0",
     "mysql2": "^3.6.5",
     "winston": "^3.13.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
     "supergateway": "^2.8.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
