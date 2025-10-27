@@ -109,7 +109,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
   const server = new Server(
     { 
       name: "mysql-mcp-server", 
-      version: "3.2.0" 
+      version: "3.2.1" 
     }, 
     { 
       capabilities: { 
@@ -119,14 +119,23 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
   );
 
   // 辅助函数：获取数据库管理器
-  function getTargetManager(connection_id?: string): DatabaseManager {
+  async function getTargetManager(connection_id?: string): Promise<DatabaseManager> {
     const targetManager = connection_id 
       ? connectionManager.getConnection(connection_id)
       : connectionManager.getActiveConnection();
 
-    if (!targetManager || !targetManager.isConnected()) {
+    if (!targetManager) {
       const errorMsg = connection_id 
-        ? `❌ 连接 '${connection_id}' 不存在或未连接`
+        ? `❌ 连接 '${connection_id}' 不存在`
+        : "❌ 没有活跃的数据库连接，请先使用 connect_database 工具连接到数据库";
+      
+      throw new McpError(ErrorCode.InvalidRequest, errorMsg);
+    }
+
+    // 检查连接状态（使用同步检查，实际的重连会在 executeQuery 等方法中自动处理）
+    if (!targetManager.isConnectedSync()) {
+      const errorMsg = connection_id 
+        ? `❌ 连接 '${connection_id}' 未连接`
         : "❌ 没有活跃的数据库连接，请先使用 connect_database 工具连接到数据库";
       
       throw new McpError(ErrorCode.InvalidRequest, errorMsg);
@@ -409,17 +418,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
           };
 
           // 获取目标数据库管理器
-          const targetManager = connection_id 
-            ? connectionManager.getConnection(connection_id)
-            : connectionManager.getActiveConnection();
-
-          if (!targetManager || !targetManager.isConnected()) {
-            const errorMsg = connection_id 
-              ? `❌ 连接 '${connection_id}' 不存在或未连接`
-              : "❌ 没有活跃的数据库连接，请先使用 connect_database 工具连接到数据库";
-            
-            throw new McpError(ErrorCode.InvalidRequest, errorMsg);
-          }
+          const targetManager = await getTargetManager(connection_id);
 
           const result = await targetManager.executeQuery(query, params);
           const activeConnId = connectionManager.getActiveConnectionId();
@@ -437,7 +436,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "begin_transaction": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           await targetManager.beginTransaction();
 
           return {
@@ -452,7 +451,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "commit_transaction": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const transactionManager = targetManager.getTransactionManager();
           const result = await transactionManager.commitTransaction(async () => {
             return await targetManager.commitTransaction();
@@ -470,7 +469,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "rollback_transaction": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const transactionManager = targetManager.getTransactionManager();
           const result = await transactionManager.fullRollback(async (query, params) => {
             return await targetManager.executeQuery(query, params || []);
@@ -488,7 +487,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "show_transaction_history": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const transactionManager = targetManager.getTransactionManager();
           const historyText = transactionManager.getRollbackOptions();
 
@@ -504,7 +503,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "rollback_to_step": {
           const { step_number, connection_id } = args as { step_number: number; connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const transactionManager = targetManager.getTransactionManager();
           
           const result = await transactionManager.rollbackToStep(step_number, async (query, params) => {
@@ -523,7 +522,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "full_rollback": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const transactionManager = targetManager.getTransactionManager();
           const result = await transactionManager.fullRollback(async (query, params) => {
             return await targetManager.executeQuery(query, params || []);
@@ -541,7 +540,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "show_tables": {
           const { connection_id } = args as { connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           const tables = await targetManager.showTables();
           let result = `📋 数据库概览\n🔗 连接: ${connection_id || connectionManager.getActiveConnectionId()}\n\n`;
           
@@ -586,7 +585,7 @@ function createMCPServer(connectionManager: ConnectionManager): Server {
 
         case "describe_table": {
           const { table_name, connection_id } = args as { table_name: string; connection_id?: string };
-          const targetManager = getTargetManager(connection_id);
+          const targetManager = await getTargetManager(connection_id);
           
           // 获取表结构
           const structure = await targetManager.describeTable(table_name);
@@ -807,7 +806,7 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "healthy", 
     transport: "streamable-http", 
     activeSessions: sessions.size,
-    version: "3.2.0"
+    version: "3.2.1"
   });
 });
 
@@ -936,7 +935,7 @@ app.all("/mcp", async (req: Request, res: Response) => {
         result: { 
           protocolVersion: "2024-11-05", 
           capabilities: { tools: {} }, 
-          serverInfo: { name: "mysql-mcp-server", version: "3.2.0" } 
+          serverInfo: { name: "mysql-mcp-server", version: "3.2.1" } 
         }, 
         id: body.id 
       });

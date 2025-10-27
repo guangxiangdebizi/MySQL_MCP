@@ -1,6 +1,6 @@
 # MySQL MCP Server 3.2 🚀
 
-一个功能强大且易用的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地进行完整的数据库操作。**v3.2 支持多数据库 Header 预配置，一次性配置多个数据库连接，连接信息不会暴露给 AI！**
+一个功能强大且易用的MySQL数据库MCP（Model Context Protocol）服务器，让你的AI助手可以安全地进行完整的数据库操作。**v3.2 支持多数据库 Header 预配置，一次性配置多个数据库连接，连接信息不会暴露给 AI！v3.2.1 修复了连接稳定性问题，支持自动重连！**
 
 > **🎯 目标用户**: 希望在 Claude Desktop、VSCode Cline 等 MCP 客户端中使用 AI 助手进行 MySQL 数据库操作的开发者
 
@@ -675,7 +675,15 @@ GRANT SELECT ON your_database.* TO 'mcp_readonly'@'localhost';
 
 ## 📦 版本历史
 
-### v3.2.0 (2025-10-20) 🆕
+### v3.2.1 (2025-10-27) 🆕
+- 🔧 **修复连接稳定性问题**：解决 "Can't add new command when connection is in closed state" 错误
+- ♻️ **自动重连机制**：连接断开时自动检测并重新连接
+- 🏥 **连接健康检查**：通过 ping 实时检测连接状态
+- ⚡ **保活机制增强**：添加 TCP Keep-Alive，防止空闲超时断开
+- 🛡️ **超时配置优化**：设置合理的连接和空闲超时参数
+- 💪 **离线环境支持**：特别优化了 SSE 模式下的长时间连接稳定性
+
+### v3.2.0 (2025-10-20)
 - 🔢 支持多数据库 Header 预配置（X-MySQL-*-1, X-MySQL-*-2...）
 - ✨ 一次性配置多个数据库环境（生产、测试、开发等）
 - 🔄 自动创建多个 Header 连接（header_db_1, header_db_2...）

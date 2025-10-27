@@ -31,6 +31,17 @@ export class DatabaseManager {
         charset: 'utf8mb4',
         timezone: '+08:00',
         multipleStatements: true, // 允许执行多条语句
+        // 连接超时设置（60秒）
+        connectTimeout: 60000,
+        // 启用保活机制（防止空闲超时断开）
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000, // 10秒后开始保活
+        // 设置等待超时（与服务器保持一致，默认8小时）
+        waitForConnections: true,
+        // 空闲超时（4小时后自动关闭，避免被服务器强制断开）
+        idleTimeout: 14400000, // 4 hours
+        // 最大空闲时间（与 idleTimeout 配合）
+        maxIdle: 10,
       });
 
       // 测试连接
@@ -62,16 +73,73 @@ export class DatabaseManager {
   }
 
   /**
-   * 检查是否已连接
+   * 检查是否已连接（通过 ping 测试真实连接状态）
    */
-  isConnected(): boolean {
+  async isConnected(): Promise<boolean> {
+    if (!this.connection) {
+      return false;
+    }
+    
+    try {
+      await this.connection.ping();
+      return true;
+    } catch (error) {
+      dbLogger.warn('连接已断开（ping失败）', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      return false;
+    }
+  }
+  
+  /**
+   * 检查是否已连接（同步版本，仅检查对象是否存在）
+   */
+  isConnectedSync(): boolean {
     return this.connection !== null;
+  }
+
+  /**
+   * 确保连接可用（如果断开则自动重连）
+   */
+  async ensureConnection(): Promise<void> {
+    if (!this.config) {
+      throw new Error("数据库配置不存在，无法重连");
+    }
+
+    // 先快速检查对象是否存在
+    if (!this.connection) {
+      dbLogger.info('连接对象不存在，尝试重新连接...');
+      await this.connect(this.config);
+      return;
+    }
+
+    // 检查连接是否真的可用
+    try {
+      await this.connection.ping();
+    } catch (error) {
+      dbLogger.warn('连接已断开，尝试重新连接...', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      
+      // 关闭旧连接
+      try {
+        await this.connection.end();
+      } catch (e) {
+        // 忽略关闭错误
+      }
+      
+      this.connection = null;
+      await this.connect(this.config);
+    }
   }
 
   /**
    * 执行SQL查询（支持所有SQL操作，自动事务管理）
    */
   async executeQuery(query: string, params: any[] = []): Promise<any> {
+    // 确保连接可用（自动重连）
+    await this.ensureConnection();
+    
     if (!this.connection) {
       throw new Error("数据库未连接");
     }
@@ -205,6 +273,9 @@ export class DatabaseManager {
    * 显示所有表
    */
   async showTables(): Promise<RowDataPacket[]> {
+    // 确保连接可用
+    await this.ensureConnection();
+    
     if (!this.connection) {
       throw new Error("数据库未连接");
     }
@@ -222,6 +293,9 @@ export class DatabaseManager {
    * 描述表结构
    */
   async describeTable(tableName: string): Promise<RowDataPacket[]> {
+    // 确保连接可用
+    await this.ensureConnection();
+    
     if (!this.connection) {
       throw new Error("数据库未连接");
     }
