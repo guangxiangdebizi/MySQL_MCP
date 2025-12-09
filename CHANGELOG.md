@@ -1,5 +1,35 @@
 # 更新日志
 
+## v4.0.2 (2025-12-09) - 🔧 修复 SSE 流错误
+
+### 修复
+
+🔧 **修复 "Failed to open SSE stream: Not Found" 错误**
+  - 添加 `GET /mcp` 端点以支持 SSE (Server-Sent Events) 流
+  - 添加 `DELETE /mcp` 端点以支持会话关闭
+  - 完整实现 Streamable HTTP 协议的所有 HTTP 方法
+
+### 技术细节
+
+**问题根源**: 
+  - Streamable HTTP 协议需要支持三种 HTTP 方法：
+    - `POST /mcp` - 发送请求和接收响应
+    - `GET /mcp` - 打开 SSE 流接收服务器推送的通知
+    - `DELETE /mcp` - 关闭会话
+  - 之前只实现了 POST，导致客户端无法打开 SSE 流
+
+**解决方案**:
+  - 实现 `GET /mcp` 处理 SSE 流请求
+  - 实现 `DELETE /mcp` 处理会话清理
+  - 所有端点都使用 `transport.handleRequest()` 统一处理
+
+**影响范围**: 
+  - 消除 "Failed to open SSE stream" 错误
+  - 支持服务器主动向客户端推送通知（如果需要）
+  - 支持优雅的会话关闭
+
+---
+
 ## v4.0.1 (2025-12-09) - 🐛 紧急修复
 
 ### 修复
