@@ -1,5 +1,49 @@
 # 更新日志
 
+## v4.0.3 (2025-12-09) - 🛠️ 优化会话管理
+
+### 修复
+
+🛠️ **修复 SSE 流断开问题 "TypeError: terminated"**
+  - 重构会话管理，使用 `onsessioninitialized` 回调正确创建会话
+  - 使用 `transport.onclose` 事件处理会话清理
+  - 改进 transport 生命周期管理
+  - 防止会话意外关闭导致的连接断开
+
+### 技术细节
+
+**问题根源**: 
+  - 会话和 transport 的生命周期管理不当
+  - 没有正确使用 StreamableHTTPServerTransport 的回调机制
+  - SSE 流可能因会话状态问题而被提前终止
+
+**解决方案**:
+  - 在 `onsessioninitialized` 回调中创建和注册会话
+  - 使用 `transport.onclose` 自动清理数据库连接和会话
+  - 确保 transport 和 session 的生命周期同步
+
+**影响范围**: 
+  - SSE 连接更加稳定
+  - 会话管理更加规范
+  - 资源清理更加可靠
+
+### 配置建议
+
+如果仍遇到 SSE 断开问题，可以在 `mcp.json` 中调整超时设置：
+
+```json
+{
+  "mysql-mcp-http": {
+    "type": "streamableHttp",
+    "url": "http://localhost:3002/mcp",
+    "timeout": 0,  // 0 表示无超时限制
+    "headers": { ... }
+  }
+}
+```
+
+---
+
 ## v4.0.2 (2025-12-09) - 🔧 修复 SSE 流错误
 
 ### 修复

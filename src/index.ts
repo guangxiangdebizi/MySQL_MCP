@@ -75,7 +75,7 @@ function createMCPServer(dbManager: DatabaseConnectionManager): Server {
   const server = new Server(
     {
       name: "mysql-mcp-server",
-      version: "4.0.2"
+      version: "4.0.3"
     },
     {
       capabilities: {
@@ -184,46 +184,79 @@ app.post("/mcp", async (req: Request, res: Response) => {
     // 复用现有会话
     session = sessions.get(sessionIdHeader)!;
     session.lastActivity = new Date();
-  } else if (isInit) {
-    // 创建新会话
-    const newId = randomUUID();
+  } else if (!sessionIdHeader && isInit) {
+    // 创建新会话（只在没有 session ID 且是 initialize 请求时）
     const dbManager = new DatabaseConnectionManager();
     const server = createMCPServer(dbManager);
     
-    // 创建 transport
+    // 创建 transport 并使用回调管理会话
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => newId
-    });
-
-    session = {
-      id: newId,
-      server,
-      transport,
-      dbManager,
-      createdAt: new Date(),
-      lastActivity: new Date()
-    };
-
-    sessions.set(newId, session);
-    console.log(`🆕 新会话创建: ${newId}`);
-
-    // 从 Header 自动添加数据库连接
-    const dbConfigs = extractDatabaseConfigsFromHeaders(req);
-    if (dbConfigs.length > 0) {
-      console.log(`📋 检测到 ${dbConfigs.length} 个 Header 预配置`);
-      
-      for (const config of dbConfigs) {
-        try {
-          await dbManager.addConnection(config);
-          console.log(`✅ Header 连接已添加: ${config.id}`);
-        } catch (error) {
-          console.error(`❌ Header 连接失败 [${config.id}]:`, error);
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sessionId: string) => {
+        // 会话初始化回调
+        const newSession: Session = {
+          id: sessionId,
+          server,
+          transport,
+          dbManager,
+          createdAt: new Date(),
+          lastActivity: new Date()
+        };
+        sessions.set(sessionId, newSession);
+        console.log(`🆕 新会话创建: ${sessionId}`);
+        
+        // 从 Header 自动添加数据库连接
+        const dbConfigs = extractDatabaseConfigsFromHeaders(req);
+        if (dbConfigs.length > 0) {
+          console.log(`📋 检测到 ${dbConfigs.length} 个 Header 预配置`);
+          
+          dbConfigs.forEach(async (config) => {
+            try {
+              await dbManager.addConnection(config);
+              console.log(`✅ Header 连接已添加: ${config.id}`);
+            } catch (error) {
+              console.error(`❌ Header 连接失败 [${config.id}]:`, error);
+            }
+          });
         }
       }
-    }
+    });
+
+    // 设置 transport 关闭处理
+    transport.onclose = () => {
+      if (transport.sessionId && sessions.has(transport.sessionId)) {
+        const sessionId = transport.sessionId;
+        const session = sessions.get(sessionId)!;
+        
+        // 清理数据库连接
+        session.dbManager.disconnectAll().catch(err => {
+          console.error(`❌ Transport 关闭时断开连接失败:`, err);
+        });
+        
+        // 删除会话
+        sessions.delete(sessionId);
+        console.log(`🗑️  会话已关闭: ${sessionId}`);
+      }
+    };
 
     // 连接 server 和 transport
     await server.connect(transport);
+    
+    // 处理请求
+    try {
+      await transport.handleRequest(req, res, body);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ 初始化请求处理失败:`, err.message);
+      if (!res.headersSent) {
+        return res.status(500).json({
+          jsonrpc: "2.0",
+          error: { code: -32000, message: err.message },
+          id: body.id || null
+        });
+      }
+    }
+    return;
   } else {
     return res.status(400).json({
       jsonrpc: "2.0",
@@ -232,7 +265,7 @@ app.post("/mcp", async (req: Request, res: Response) => {
     });
   }
 
-  // 使用 transport 处理所有请求（包括 initialize, tools/list, tools/call 等）
+  // 使用 transport 处理所有请求（包括 tools/list, tools/call 等）
   try {
     await session.transport.handleRequest(req, res, body);
   } catch (error) {
@@ -326,7 +359,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 MySQL MCP Server v4.0.2 已启动                       ║
+║   🚀 MySQL MCP Server v4.0.3 已启动                       ║
 ║                                                           ║
 ║   📡 MCP Endpoint:  http://localhost:${PORT}/mcp           ║
 ║   💚 Health Check:  http://localhost:${PORT}/health        ║
