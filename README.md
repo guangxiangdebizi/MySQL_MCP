@@ -349,6 +349,114 @@ lsof -ti:3001 | xargs kill -9
 
 ---
 
+## 🔧 故障排除
+
+### 问题：`ERR_MODULE_NOT_FOUND` 错误
+
+**错误信息**：
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '...@modelcontextprotocol/sdk...'
+```
+
+**解决方案**：
+
+1. **删除并重新安装依赖**：
+```bash
+# 删除旧依赖
+rm -rf node_modules package-lock.json  # Linux/Mac
+# 或
+rmdir /s /q node_modules && del package-lock.json  # Windows
+
+# 清理缓存
+npm cache clean --force
+
+# 重新安装
+npm install
+```
+
+2. **检查 Node.js 版本**：
+```bash
+node --version  # 需要 >= 18.0.0
+```
+
+3. **使用全局安装**：
+```bash
+npm install -g @xingyuchen/mysql-mcp-server@latest
+```
+
+### 问题：SSE 流断开
+
+**错误信息**：
+```
+SSE stream disconnected: TypeError: terminated
+```
+
+**解决方案**：
+
+在 `mcp.json` 中设置更长的超时或禁用超时：
+```json
+{
+  "mysql-mcp-http": {
+    "type": "streamableHttp",
+    "url": "http://localhost:3002/mcp",
+    "timeout": 0,  // 0 表示无超时限制
+    "headers": { ... }
+  }
+}
+```
+
+### 问题：安全漏洞警告
+
+**警告信息**：
+```
+npm audit: vulnerabilities found
+```
+
+**解决方案**：
+```bash
+# 自动修复
+npm audit fix
+
+# 如果还有问题，强制修复
+npm audit fix --force
+
+# 重新构建
+npm run build
+```
+
+### 问题：端口被占用
+
+**错误信息**：
+```
+Error: listen EADDRINUSE: address already in use :::3002
+```
+
+**解决方案**：
+
+1. **更改端口**（在 `.env` 文件中）：
+```env
+PORT=3003
+```
+
+2. **或者关闭占用端口的进程**：
+```bash
+# Windows
+netstat -ano | findstr :3002
+taskkill /PID <进程ID> /F
+
+# Linux/Mac
+lsof -i :3002
+kill -9 <进程ID>
+```
+
+### 获取更多帮助
+
+- 🐛 [提交 Issue](https://github.com/guangxiangdebizi/MySQL_MCP/issues)
+- 📖 [查看文档](https://github.com/guangxiangdebizi/MySQL_MCP#readme)
+- 💬 [讨论区](https://github.com/guangxiangdebizi/MySQL_MCP/discussions)
+
+---
+
 ## 📄 License
 
 Apache 2.0 License - 详见 [LICENSE](./LICENSE) 文件
