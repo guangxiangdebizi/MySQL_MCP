@@ -1,7 +1,74 @@
-推文介绍.txt
-logs/combined-2025-06-30.log
-logs/database-2025-06-30.log
+# ==================== Node.js ====================
+# 依赖包目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ==================== TypeScript 编译输出 ====================
+# 编译后的 JavaScript 文件
+dist/
+build/
+*.js.map
+
+# ==================== 日志文件 ====================
+# 所有日志文件
+logs/
 *.log
-*.json
-实习日志-陈星宇-0630.md
-工作任务跟踪表-陈星宇-0630.csv
+
+# ==================== 环境配置 ====================
+# 环境变量文件（包含敏感信息）
+.env
+.env.local
+.env.*.local
+
+# ==================== IDE 和编辑器 ====================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ==================== 操作系统 ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ==================== 测试和覆盖率 ====================
+coverage/
+.nyc_output/
+
+# ==================== 临时文件 ====================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ==================== 个人文件（原有配置保留） ====================
+推文介绍.txt
+实习日志-陈星宇-*.md
+工作任务跟踪表-陈星宇-*.csv
+
+# ==================== 测试文件（可选） ====================
+# 如果不想提交测试脚本，取消下面的注释
+# test-*.js
+# *-test.js

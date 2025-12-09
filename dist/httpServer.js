@@ -729,23 +729,24 @@ app.all("/mcp", async (req, res) => {
                 id: null
             });
         }
-        // 检查并处理 Header 中的数据库配置（支持多个数据库）
-        if (session) {
+        // 检查并处理 Header 中的数据库配置（仅在会话初始化或Header连接为空时创建）
+        if (session && (isInit || session.headerConnectionIds.length === 0)) {
             const dbConfigs = extractDatabaseConfigsFromHeaders(req);
             if (dbConfigs.length > 0) {
                 logger.info(`检测到 ${dbConfigs.length} 个数据库配置`, {
                     sessionId: session.id,
-                    configIds: dbConfigs.map(c => c.id)
+                    configIds: dbConfigs.map(c => c.id),
+                    isInitialize: isInit
                 });
                 for (const config of dbConfigs) {
-                    // 生成连接 ID
+                    // 生成连接 ID（不包含sessionId，确保跨请求复用）
                     const headerConnId = config.id === 'default'
-                        ? `header_db_default_${session.id}`
-                        : `header_db_${config.id}`;
+                        ? `header_default`
+                        : `header_${config.id}`;
                     try {
                         // 检查是否已经创建了这个连接
-                        if (!session.headerConnectionIds.includes(headerConnId) &&
-                            !session.connectionManager.getConnection(headerConnId)) {
+                        const existingConn = session.connectionManager.getConnection(headerConnId);
+                        if (!existingConn) {
                             await session.connectionManager.addConnection(headerConnId, {
                                 host: config.host,
                                 port: config.port,
@@ -762,6 +763,12 @@ app.all("/mcp", async (req, res) => {
                                 database: config.database
                             });
                         }
+                        else {
+                            logger.debug("Header 连接已存在，跳过创建", {
+                                sessionId: session.id,
+                                connectionId: headerConnId
+                            });
+                        }
                     }
                     catch (error) {
                         logger.error("从 Header 创建数据库连接失败", {
@@ -773,9 +780,10 @@ app.all("/mcp", async (req, res) => {
                     }
                 }
                 if (session.headerConnectionIds.length > 0) {
-                    logger.info(`成功创建 ${session.headerConnectionIds.length} 个 Header 预配置连接`, {
+                    logger.info(`当前会话拥有 ${session.headerConnectionIds.length} 个 Header 预配置连接`, {
                         sessionId: session.id,
-                        connectionIds: session.headerConnectionIds
+                        connectionIds: session.headerConnectionIds,
+                        activeConnections: session.connectionManager.getConnectionCount()
                     });
                 }
             }
