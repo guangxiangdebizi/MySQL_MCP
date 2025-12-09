@@ -123,6 +123,7 @@ app.get("/health", (_req, res) => {
     });
 });
 // ==================== MCP Endpoint ====================
+// POST: 处理请求和响应
 app.post("/mcp", async (req, res) => {
     const sessionIdHeader = req.headers["mcp-session-id"];
     const body = req.body;
@@ -198,6 +199,69 @@ app.post("/mcp", async (req, res) => {
                 id: body.id || null
             });
         }
+    }
+});
+// GET: 处理 SSE 流（用于服务器推送通知）
+app.get("/mcp", async (req, res) => {
+    const sessionIdHeader = req.headers["mcp-session-id"];
+    if (!sessionIdHeader || !sessions.has(sessionIdHeader)) {
+        return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "Session not found or invalid" },
+            id: null
+        });
+    }
+    const session = sessions.get(sessionIdHeader);
+    session.lastActivity = new Date();
+    try {
+        // 使用 transport 处理 SSE 流请求
+        await session.transport.handleRequest(req, res);
+    }
+    catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.error(`❌ SSE 流处理失败:`, err.message);
+        if (!res.headersSent) {
+            return res.status(500).json({
+                jsonrpc: "2.0",
+                error: { code: -32000, message: err.message },
+                id: null
+            });
+        }
+    }
+});
+// DELETE: 关闭会话
+app.delete("/mcp", async (req, res) => {
+    const sessionIdHeader = req.headers["mcp-session-id"];
+    if (!sessionIdHeader || !sessions.has(sessionIdHeader)) {
+        return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "Session not found" },
+            id: null
+        });
+    }
+    const session = sessions.get(sessionIdHeader);
+    try {
+        // 断开数据库连接
+        await session.dbManager.disconnectAll();
+        // 关闭 transport
+        await session.transport.close();
+        // 删除会话
+        sessions.delete(sessionIdHeader);
+        console.log(`🗑️  会话已关闭: ${sessionIdHeader}`);
+        return res.status(200).json({
+            jsonrpc: "2.0",
+            result: { success: true },
+            id: null
+        });
+    }
+    catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.error(`❌ 关闭会话失败:`, err.message);
+        return res.status(500).json({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: err.message },
+            id: null
+        });
     }
 });
 // ==================== 启动服务器 ====================
