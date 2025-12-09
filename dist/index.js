@@ -55,7 +55,7 @@ function extractDatabaseConfigsFromHeaders(req) {
 function createMCPServer(dbManager) {
     const server = new Server({
         name: "mysql-mcp-server",
-        version: "4.0.4"
+        version: "4.0.5"
     }, {
         capabilities: {
             tools: {}
@@ -119,7 +119,7 @@ app.get("/health", (_req, res) => {
         status: "healthy",
         transport: "streamable-http",
         activeSessions: sessions.size,
-        version: "4.0.0"
+        version: "4.0.5"
     });
 });
 // ==================== MCP Endpoint ====================
@@ -301,7 +301,7 @@ app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 MySQL MCP Server v4.0.4 已启动                       ║
+║   🚀 MySQL MCP Server v4.0.5 已启动                       ║
 ║                                                           ║
 ║   📡 MCP Endpoint:  http://localhost:${PORT}/mcp           ║
 ║   💚 Health Check:  http://localhost:${PORT}/health        ║
@@ -311,6 +311,7 @@ app.listen(PORT, () => {
 ║      • AI 动态添加连接                                     ║
 ║      • 多数据库管理                                        ║
 ║      • SQL 查询执行                                        ║
+║      • 连接池 + 自动重连                                   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
   `);

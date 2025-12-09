@@ -1,4 +1,4 @@
-import mysql, { Connection } from "mysql2/promise";
+import mysql, { Pool } from "mysql2/promise";
 
 export interface DatabaseConfig {
   id: string;
@@ -21,7 +21,7 @@ export interface ConnectionInfo {
 }
 
 export class DatabaseConnectionManager {
-  private connections = new Map<string, Connection>();
+  private connections = new Map<string, Pool>();
   private configs = new Map<string, ConnectionInfo>();
   private activeConnectionId: string | null = null;
 
@@ -34,8 +34,8 @@ export class DatabaseConnectionManager {
       await this.removeConnection(config.id);
     }
 
-    // 创建连接
-    const connection = await mysql.createConnection({
+    // 创建连接池
+    const pool = mysql.createPool({
       host: config.host,
       port: config.port,
       user: config.user,
@@ -43,13 +43,27 @@ export class DatabaseConnectionManager {
       database: config.database,
       charset: 'utf8mb4',
       timezone: '+08:00',
+      // 连接池配置
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      // 连接保活配置
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+      // 超时配置
+      connectTimeout: 10000,
+      // 自动重连
+      maxIdle: 10,
+      idleTimeout: 60000,
     });
 
     // 测试连接
+    const connection = await pool.getConnection();
     await connection.ping();
+    connection.release();
 
-    // 保存连接和配置
-    this.connections.set(config.id, connection);
+    // 保存连接池和配置
+    this.connections.set(config.id, pool);
     this.configs.set(config.id, {
       ...config,
       isActive: false,
@@ -68,12 +82,12 @@ export class DatabaseConnectionManager {
    * 移除连接
    */
   async removeConnection(id: string): Promise<void> {
-    const connection = this.connections.get(id);
-    if (!connection) {
+    const pool = this.connections.get(id);
+    if (!pool) {
       throw new Error(`连接 '${id}' 不存在`);
     }
 
-    await connection.end();
+    await pool.end();
     this.connections.delete(id);
     this.configs.delete(id);
 
@@ -98,9 +112,9 @@ export class DatabaseConnectionManager {
   }
 
   /**
-   * 获取活跃连接
+   * 获取活跃连接池
    */
-  getActiveConnection(): Connection {
+  getActiveConnection(): Pool {
     if (!this.activeConnectionId || !this.connections.has(this.activeConnectionId)) {
       throw new Error("没有活跃的数据库连接");
     }
@@ -115,9 +129,9 @@ export class DatabaseConnectionManager {
   }
 
   /**
-   * 获取指定连接
+   * 获取指定连接池
    */
-  getConnection(id: string): Connection | undefined {
+  getConnection(id: string): Pool | undefined {
     return this.connections.get(id);
   }
 
@@ -135,26 +149,26 @@ export class DatabaseConnectionManager {
    * 执行查询
    */
   async executeQuery(sql: string, connectionId?: string): Promise<any> {
-    const connection = connectionId 
+    const pool = connectionId 
       ? this.getConnection(connectionId)
       : this.getActiveConnection();
 
-    if (!connection) {
+    if (!pool) {
       throw new Error(connectionId ? `连接 '${connectionId}' 不存在` : "没有活跃连接");
     }
 
-    const [results] = await connection.query(sql);
+    const [results] = await pool.query(sql);
     return results;
   }
 
   /**
-   * 断开所有连接
+   * 断开所有连接池
    */
   async disconnectAll(): Promise<void> {
-    for (const [id, connection] of this.connections.entries()) {
+    for (const [id, pool] of this.connections.entries()) {
       try {
-        await connection.end();
-        console.log(`断开连接: ${id}`);
+        await pool.end();
+        console.log(`断开连接池: ${id}`);
       } catch (error) {
         console.error(`断开 ${id} 失败:`, error);
       }

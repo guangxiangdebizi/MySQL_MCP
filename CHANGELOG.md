@@ -1,5 +1,77 @@
 # 更新日志
 
+## v4.0.5 (2025-12-09) - 🔄 连接池优化
+
+### 重大修复
+
+🐛 **修复 "Can't add new command when connection is in closed state" 错误**
+  - 使用连接池（Connection Pool）替代单个连接
+  - 解决长时间空闲导致连接被 MySQL 服务器关闭的问题
+  - 解决网络中断导致连接断开的问题
+
+### 新增功能
+
+✨ **连接保活机制（Keep-Alive）**
+  - 自动发送心跳包保持连接活跃
+  - 防止 MySQL 服务器因超时关闭连接
+  - 配置参数：`enableKeepAlive: true`, `keepAliveInitialDelay: 0`
+
+✨ **自动重连功能**
+  - 连接断开时自动创建新连接
+  - 用户无感知的连接恢复
+  - 提高系统稳定性和可靠性
+
+✨ **并发查询支持**
+  - 连接池大小：10 个连接
+  - 支持多个查询同时执行
+  - 自动队列管理
+
+### 技术细节
+
+**问题根源**:
+  - 使用 `mysql.createConnection()` 创建单个连接
+  - MySQL 服务器的 `wait_timeout` 和 `interactive_timeout` 会关闭空闲连接
+  - 没有连接保活和重连机制
+  - 连接关闭后继续使用会报错
+
+**解决方案**:
+  - 使用 `mysql.createPool()` 创建连接池
+  - 配置连接池参数：
+    - `connectionLimit: 10` - 最多 10 个连接
+    - `enableKeepAlive: true` - 启用保活
+    - `idleTimeout: 60000` - 空闲超时 60 秒
+    - `waitForConnections: true` - 等待可用连接
+  - 连接池自动管理连接生命周期
+
+**代码变更**:
+```typescript
+// 旧代码（单连接）
+const connection = await mysql.createConnection({...});
+
+// 新代码（连接池）
+const pool = mysql.createPool({
+  ...config,
+  connectionLimit: 10,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  idleTimeout: 60000,
+});
+```
+
+**影响范围**:
+  - 所有数据库查询操作更加稳定
+  - 不再出现连接关闭错误
+  - 支持更高的并发查询
+  - 适合长时间运行的服务
+
+### 配置说明
+
+无需修改配置，连接池功能已内置并自动启用。
+
+如果需要调整连接池大小，可以修改 `src/database.ts` 中的 `connectionLimit` 参数。
+
+---
+
 ## v4.0.4 (2025-12-09) - 🔐 安全更新
 
 ### 安全修复
