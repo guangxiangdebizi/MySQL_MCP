@@ -55,14 +55,14 @@ function extractDatabaseConfigsFromHeaders(req) {
 function createMCPServer(dbManager) {
     const server = new Server({
         name: "mysql-mcp-server",
-        version: "4.0.3"
+        version: "4.0.4"
     }, {
         capabilities: {
             tools: {}
         }
     });
     // 注册工具列表处理器
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.setRequestHandler(ListToolsRequestSchema, async (_request) => {
         return { tools: allTools };
     });
     // 注册工具调用处理器
@@ -301,7 +301,7 @@ app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 MySQL MCP Server v4.0.3 已启动                       ║
+║   🚀 MySQL MCP Server v4.0.4 已启动                       ║
 ║                                                           ║
 ║   📡 MCP Endpoint:  http://localhost:${PORT}/mcp           ║
 ║   💚 Health Check:  http://localhost:${PORT}/health        ║

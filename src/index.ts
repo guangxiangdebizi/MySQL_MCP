@@ -5,7 +5,12 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { 
+  CallToolRequestSchema, 
+  ListToolsRequestSchema,
+  CallToolRequest,
+  ListToolsRequest
+} from "@modelcontextprotocol/sdk/types.js";
 import { DatabaseConnectionManager, DatabaseConfig } from "./database.js";
 import { allTools, handleToolCall } from "./tools/index.js";
 
@@ -75,7 +80,7 @@ function createMCPServer(dbManager: DatabaseConnectionManager): Server {
   const server = new Server(
     {
       name: "mysql-mcp-server",
-      version: "4.0.3"
+      version: "4.0.4"
     },
     {
       capabilities: {
@@ -85,12 +90,12 @@ function createMCPServer(dbManager: DatabaseConnectionManager): Server {
   );
 
   // 注册工具列表处理器
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, async (_request: any) => {
     return { tools: allTools };
   });
 
   // 注册工具调用处理器
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
     const { name, arguments: args } = request.params;
     
     try {
@@ -359,7 +364,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 MySQL MCP Server v4.0.3 已启动                       ║
+║   🚀 MySQL MCP Server v4.0.4 已启动                       ║
 ║                                                           ║
 ║   📡 MCP Endpoint:  http://localhost:${PORT}/mcp           ║
 ║   💚 Health Check:  http://localhost:${PORT}/health        ║

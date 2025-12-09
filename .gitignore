@@ -8,9 +8,9 @@ package-lock.json
 
 # ==================== TypeScript 编译输出 ====================
 # 编译后的 JavaScript 文件
-dist/
+# 注意：dist/ 需要提交到 git 用于 npm 发布
 build/
-*.js.map
+# *.js.map  # 保留 source map 以便调试
 
 # ==================== 日志文件 ====================
 # 所有日志文件
