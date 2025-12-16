@@ -75,12 +75,34 @@ function extractDatabaseConfigsFromHeaders(req: Request): DatabaseConfig[] {
   return configs;
 }
 
+// ==================== 初始化数据库连接（同步等待） ====================
+async function initializeDatabaseConnections(
+  dbManager: DatabaseConnectionManager,
+  configs: DatabaseConfig[]
+): Promise<void> {
+  if (configs.length === 0) return;
+  
+  console.log(`📋 检测到 ${configs.length} 个 Header 预配置，正在添加...`);
+  
+  // 使用 for...of 确保顺序等待每个连接完成
+  for (const config of configs) {
+    try {
+      await dbManager.addConnection(config);
+      console.log(`✅ Header 连接已添加: ${config.id}`);
+    } catch (error) {
+      console.error(`❌ Header 连接失败 [${config.id}]:`, error);
+    }
+  }
+  
+  console.log(`📋 Header 预配置初始化完成，成功连接 ${dbManager.listConnections().length} 个`);
+}
+
 // ==================== 创建 MCP Server ====================
 function createMCPServer(dbManager: DatabaseConnectionManager): Server {
   const server = new Server(
     {
       name: "mysql-mcp-server",
-      version: "4.0.5"
+      version: "4.0.6"
     },
     {
       capabilities: {
@@ -162,7 +184,7 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "healthy",
     transport: "streamable-http",
     activeSessions: sessions.size,
-    version: "4.0.5"
+    version: "4.0.6"
   });
 });
 
@@ -192,13 +214,19 @@ app.post("/mcp", async (req: Request, res: Response) => {
   } else if (!sessionIdHeader && isInit) {
     // 创建新会话（只在没有 session ID 且是 initialize 请求时）
     const dbManager = new DatabaseConnectionManager();
+    
+    // 🔧 关键修复：在创建会话之前，先同步初始化数据库连接
+    // 这样确保当 initialize 响应返回时，连接已经建立好了
+    const dbConfigs = extractDatabaseConfigsFromHeaders(req);
+    await initializeDatabaseConnections(dbManager, dbConfigs);
+    
     const server = createMCPServer(dbManager);
     
     // 创建 transport 并使用回调管理会话
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sessionId: string) => {
-        // 会话初始化回调
+        // 会话初始化回调 - 此时数据库连接已经建立好了
         const newSession: Session = {
           id: sessionId,
           server,
@@ -209,21 +237,7 @@ app.post("/mcp", async (req: Request, res: Response) => {
         };
         sessions.set(sessionId, newSession);
         console.log(`🆕 新会话创建: ${sessionId}`);
-        
-        // 从 Header 自动添加数据库连接
-        const dbConfigs = extractDatabaseConfigsFromHeaders(req);
-        if (dbConfigs.length > 0) {
-          console.log(`📋 检测到 ${dbConfigs.length} 个 Header 预配置`);
-          
-          dbConfigs.forEach(async (config) => {
-            try {
-              await dbManager.addConnection(config);
-              console.log(`✅ Header 连接已添加: ${config.id}`);
-            } catch (error) {
-              console.error(`❌ Header 连接失败 [${config.id}]:`, error);
-            }
-          });
-        }
+        console.log(`📊 当前数据库连接数: ${dbManager.listConnections().length}`);
       }
     });
 

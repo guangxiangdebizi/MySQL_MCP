@@ -1,5 +1,53 @@
 # 更新日志
 
+## v4.0.6 (2025-12-16) - 🐛 Fix Langchain MCP Client Compatibility
+
+### Bug Fix
+
+🐛 **Fix "No active database connection" error when using Langchain MCP client**
+  - Fixed async race condition in database connection initialization
+  - Header-configured database connections now properly await completion before session initialization response
+  - Ensures connections are fully established before any subsequent tool calls
+
+### Technical Details
+
+**Root Cause**:
+  - Used `forEach` with async callback to add database connections in `onsessioninitialized` callback
+  - `forEach` does NOT await async callbacks, causing the initialize response to return before connections are established
+  - When Langchain client immediately sends `list_connections` request, connections may not be ready yet
+
+**Solution**:
+  - Created new `initializeDatabaseConnections()` async function using `for...of` loop
+  - Moved database initialization BEFORE transport creation
+  - Properly `await` all connection operations before returning initialize response
+
+**Code Change**:
+```typescript
+// Before (broken) - forEach doesn't await
+dbConfigs.forEach(async (config) => {
+  await dbManager.addConnection(config);  // NOT awaited!
+});
+
+// After (fixed) - for...of properly awaits
+for (const config of configs) {
+  await dbManager.addConnection(config);  // Properly awaited
+}
+```
+
+**Impact**:
+  - Langchain MCP client now works correctly
+  - All MCP clients that send rapid sequential requests after initialize will work reliably
+  - No breaking changes to existing functionality
+
+### Affected Users
+
+This fix is specifically for users experiencing issues when:
+- Using Langchain framework with MCP client
+- Using any MCP client that sends requests immediately after initialization
+- Seeing "No active database connection" error despite successful header configuration
+
+---
+
 ## v4.0.5 (2025-12-09) - 🔄 连接池优化
 
 ### 重大修复
