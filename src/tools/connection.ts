@@ -42,7 +42,7 @@ export const connectionTools: Tool[] = [
   },
   {
     name: "list_connections",
-    description: "列出所有数据库连接",
+    description: "列出所有数据库连接及其ID。如果需要知道有效的connection_id，请调用此工具查看。返回信息包括：连接ID、主机、端口、数据库名、当前活跃状态等。",
     inputSchema: {
       type: "object",
       properties: {},

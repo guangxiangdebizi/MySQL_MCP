@@ -7,7 +7,7 @@ import { DatabaseConnectionManager } from "../database.js";
 export const queryTools: Tool[] = [
   {
     name: "execute_query",
-    description: "执行SQL查询（支持SELECT、INSERT、UPDATE、DELETE等所有SQL语句）",
+    description: "执行SQL查询（支持SELECT、INSERT、UPDATE、DELETE等所有SQL语句）。注意：通常不需要指定connection_id，系统会自动使用当前活跃连接。",
     inputSchema: {
       type: "object",
       properties: {
@@ -17,7 +17,7 @@ export const queryTools: Tool[] = [
         },
         connection_id: {
           type: "string",
-          description: "指定连接ID（可选，不指定则使用当前活跃连接）"
+          description: "【通常不需要填写】指定连接ID。留空则自动使用当前活跃连接。如需查看可用连接ID，请先调用 list_connections 工具。"
         }
       },
       required: ["query"]
@@ -25,13 +25,13 @@ export const queryTools: Tool[] = [
   },
   {
     name: "show_tables",
-    description: "显示数据库中的所有表",
+    description: "显示数据库中的所有表。自动使用当前活跃的数据库连接。",
     inputSchema: {
       type: "object",
       properties: {
         connection_id: {
           type: "string",
-          description: "指定连接ID（可选）"
+          description: "【通常不需要填写】指定连接ID，留空自动使用活跃连接"
         }
       },
       required: []
@@ -39,7 +39,7 @@ export const queryTools: Tool[] = [
   },
   {
     name: "describe_table",
-    description: "查看表的结构和字段信息",
+    description: "查看表的结构和字段信息。自动使用当前活跃的数据库连接。",
     inputSchema: {
       type: "object",
       properties: {
@@ -49,7 +49,7 @@ export const queryTools: Tool[] = [
         },
         connection_id: {
           type: "string",
-          description: "指定连接ID（可选）"
+          description: "【通常不需要填写】指定连接ID，留空自动使用活跃连接"
         }
       },
       required: ["table_name"]
@@ -57,13 +57,13 @@ export const queryTools: Tool[] = [
   },
   {
     name: "show_databases",
-    description: "显示所有可访问的数据库",
+    description: "显示所有可访问的数据库。自动使用当前活跃的数据库连接。",
     inputSchema: {
       type: "object",
       properties: {
         connection_id: {
           type: "string",
-          description: "指定连接ID（可选）"
+          description: "【通常不需要填写】指定连接ID，留空自动使用活跃连接"
         }
       },
       required: []
