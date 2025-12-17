@@ -1,5 +1,42 @@
 # 更新日志
 
+## v4.0.7 (2025-12-17) - 🛡️ Robust connection_id Handling
+
+### Improvement
+
+🛡️ **Auto-fallback for invalid connection_id parameter**
+  - AI agents may pass invalid `connection_id` values like "默认", "default", "active", etc.
+  - Now automatically falls back to the active connection when an invalid value is detected
+  - Prevents "Connection 'xxx' does not exist" errors caused by AI hallucination
+
+### Technical Details
+
+**Problem**:
+  - AI agents (especially in Langchain) sometimes generate arbitrary `connection_id` values
+  - Examples: `"默认"`, `"default"`, `"current"`, or non-existent IDs
+  - Server would throw error: `连接 'xxx' 不存在`
+
+**Solution**:
+  - Added `normalizeConnectionId()` function to validate and normalize the parameter
+  - Invalid values are automatically converted to `undefined` (use active connection)
+  - Checks against a list of common invalid values
+  - Verifies if the connection ID actually exists before using it
+
+**Invalid Values Handled**:
+```typescript
+const invalidValues = [
+  '默认', 'default', 'active', 'current', 'auto', 
+  '当前', '活跃', 'none', 'null', 'undefined'
+];
+```
+
+**Impact**:
+  - More robust handling of AI-generated parameters
+  - Graceful fallback instead of hard errors
+  - Better user experience with AI assistants
+
+---
+
 ## v4.0.6 (2025-12-16) - 🐛 Fix Langchain MCP Client Compatibility
 
 ### Bug Fix

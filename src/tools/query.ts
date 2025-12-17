@@ -72,6 +72,44 @@ export const queryTools: Tool[] = [
 ];
 
 /**
+ * 验证并规范化 connection_id 参数
+ * 如果传入无效值（空字符串、"默认"、"default" 等），返回 undefined 使用活跃连接
+ */
+function normalizeConnectionId(
+  connectionId: string | undefined,
+  dbManager: DatabaseConnectionManager
+): string | undefined {
+  // 如果未提供或为空，使用活跃连接
+  if (!connectionId || connectionId.trim() === '') {
+    return undefined;
+  }
+
+  const trimmed = connectionId.trim();
+  
+  // 常见的无效值列表（AI 可能会传这些）
+  const invalidValues = [
+    '默认', 'default', 'active', 'current', 'auto', 
+    '当前', '活跃', 'none', 'null', 'undefined'
+  ];
+  
+  if (invalidValues.includes(trimmed.toLowerCase())) {
+    return undefined;
+  }
+
+  // 检查连接是否真实存在
+  const connections = dbManager.listConnections();
+  const exists = connections.some(conn => conn.id === trimmed);
+  
+  if (!exists) {
+    // 连接不存在，回退到活跃连接
+    console.log(`⚠️ connection_id "${trimmed}" 不存在，使用活跃连接`);
+    return undefined;
+  }
+
+  return trimmed;
+}
+
+/**
  * 查询工具处理器
  */
 export async function handleQueryTool(
@@ -79,7 +117,8 @@ export async function handleQueryTool(
   args: any,
   dbManager: DatabaseConnectionManager
 ): Promise<any> {
-  const { connection_id } = args;
+  // 规范化 connection_id，无效值自动回退到活跃连接
+  const connection_id = normalizeConnectionId(args.connection_id, dbManager);
 
   switch (name) {
     case "execute_query": {

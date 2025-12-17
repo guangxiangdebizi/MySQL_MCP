@@ -102,7 +102,7 @@ function createMCPServer(dbManager: DatabaseConnectionManager): Server {
   const server = new Server(
     {
       name: "mysql-mcp-server",
-      version: "4.0.6"
+      version: "4.0.7"
     },
     {
       capabilities: {
@@ -184,7 +184,7 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "healthy",
     transport: "streamable-http",
     activeSessions: sessions.size,
-    version: "4.0.6"
+    version: "4.0.7"
   });
 });
 

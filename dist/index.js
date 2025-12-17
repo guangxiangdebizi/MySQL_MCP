@@ -72,7 +72,7 @@ async function initializeDatabaseConnections(dbManager, configs) {
 function createMCPServer(dbManager) {
     const server = new Server({
         name: "mysql-mcp-server",
-        version: "4.0.6"
+        version: "4.0.7"
     }, {
         capabilities: {
             tools: {}
@@ -136,7 +136,7 @@ app.get("/health", (_req, res) => {
         status: "healthy",
         transport: "streamable-http",
         activeSessions: sessions.size,
-        version: "4.0.6"
+        version: "4.0.7"
     });
 });
 // ==================== MCP Endpoint ====================
